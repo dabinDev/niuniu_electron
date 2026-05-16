@@ -1,0 +1,82 @@
+{
+  "name": "niuniu_electron",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite --host 127.0.0.1 --port 5173 --strictPort\" \"wait-on tcp:5173 && electron .\"",
+    "build": "npm run icon:generate && npm run typecheck && vite build && tsc -p tsconfig.node.json",
+    "icon:generate": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-niuniu-icon.ps1 && node scripts/generate-niuniu-ico.mjs",
+    "preview": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "package:win": "electron-builder --win portable --x64",
+    "smoke:packaged-window": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/packaged-window-smoke.ps1",
+    "smoke:window-controls": "node scripts/window-control-smoke.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit"
+  },
+  "build": {
+    "appId": "cn.cylonai.niuniu.electron.client",
+    "productName": "牛牛开盘",
+    "executableName": "electron_niuniu",
+    "artifactName": "electron_niuniu.exe",
+    "electronDist": "node_modules/electron/dist",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker"
+    }
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.5",
+    "@vitejs/plugin-react": "^5.0.4",
+    "axios": "^1.12.2",
+    "clsx": "^2.1.1",
+    "concurrently": "^9.2.1",
+    "date-fns": "^4.1.0",
+    "dompurify": "^3.3.0",
+    "html-to-image": "^1.11.13",
+    "lucide-react": "^0.468.0",
+    "marked": "^14.1.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.11",
+    "wait-on": "^9.0.1",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/dompurify": "^3.2.0",
+    "@types/node": "^24.9.2",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitest/ui": "^3.2.4",
+    "electron": "^39.1.2",
+    "electron-builder": "^26.8.1",
+    "jsdom": "^25.0.1",
+    "msw": "^2.11.6",
+    "png-to-ico": "^3.0.1",
+    "vitest": "^3.2.4"
+  }
+}
