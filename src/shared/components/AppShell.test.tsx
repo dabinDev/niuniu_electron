@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -327,6 +327,7 @@ describe("AppShell", () => {
     );
   });
 
+
   it("renders the machine code in the sidebar and copies it", async () => {
     const copyText = vi.fn(async () => ({ message: "ok", success: true }));
     usePreferencesStore.setState({
@@ -354,6 +355,111 @@ describe("AppShell", () => {
     expect(await screen.findByText("NN-SIDEBAR-MACHINE")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "复制机器码" }));
     expect(copyText).toHaveBeenCalledWith("NN-SIDEBAR-MACHINE");
+  });
+
+  it("opens about dialog and checks updates from the version label", async () => {
+    const checkForInstallerUpdate = vi.fn(async () => ({ appVersion: "0.1.0", phase: "not-available" }));
+    Object.defineProperty(window, "niuniu", {
+      configurable: true,
+      value: {
+        appName: "NiuNiu",
+        checkForInstallerUpdate,
+        getAppVersion: async () => ({ isPackaged: false, version: "0.1.0" }),
+        getMachineCode: async () => ({ machineCode: "NN-EXISTING", version: "win-v1" }),
+        onUpdateStatus: vi.fn(() => () => undefined)
+      }
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      current_version: "0.1.0",
+      latest_version: "0.1.0",
+      platform: "win",
+      has_update: false,
+      force_update: false
+    }), { status: 200 })));
+
+    render(
+      <MemoryRouter initialEntries={["/overview"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "关于牛牛开盘" }));
+    expect(screen.getByRole("dialog", { name: "关于牛牛开盘" })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "0.1.0" }));
+
+    await waitFor(() => expect(checkForInstallerUpdate).toHaveBeenCalled());
+  });
+
+  it("locks a forced update modal and renders installer download progress", async () => {
+    let updateListener: ((status: { appVersion: string; phase: string; progress?: { bytesPerSecond: number; percent: number; total: number; transferred: number } }) => void) | null = null;
+    const downloadInstallerUpdate = vi.fn(async () => {
+      updateListener?.({
+        appVersion: "0.1.0",
+        phase: "downloading",
+        progress: {
+          bytesPerSecond: 2048,
+          percent: 42,
+          total: 10485760,
+          transferred: 4404019
+        }
+      });
+      return {
+        appVersion: "0.1.0",
+        phase: "downloading",
+        progress: {
+          bytesPerSecond: 2048,
+          percent: 42,
+          total: 10485760,
+          transferred: 4404019
+        }
+      };
+    });
+    Object.defineProperty(window, "niuniu", {
+      configurable: true,
+      value: {
+        appName: "NiuNiu",
+        checkForInstallerUpdate: vi.fn(async () => ({ appVersion: "0.1.0", phase: "available", info: { version: "0.2.0" } })),
+        downloadInstallerUpdate,
+        getAppVersion: async () => ({ isPackaged: false, version: "0.1.0" }),
+        getMachineCode: async () => ({ machineCode: "NN-EXISTING", version: "win-v1" }),
+        installInstallerUpdate: vi.fn(),
+        onUpdateStatus: vi.fn((listener) => {
+          updateListener = listener;
+          return () => undefined;
+        }),
+        windowControl: vi.fn()
+      }
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      current_version: "0.1.0",
+      latest_version: "0.2.0",
+      platform: "win",
+      has_update: true,
+      force_update: true,
+      download_url: "https://example.com/electron_niuniu-0.2.0-setup.exe",
+      file_size: 10485760,
+      release_notes_markdown: "## 更新内容\n- 验证强制更新弹窗"
+    }), { status: 200 })));
+
+    render(
+      <MemoryRouter initialEntries={["/overview"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole("dialog", { name: "版本更新" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "稍后再说" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "关闭窗口" })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "立即更新" }));
+
+    expect(downloadInstallerUpdate).toHaveBeenCalled();
+    expect(await screen.findByText("42%")).toBeInTheDocument();
+    expect(screen.getByText("2.0 KB/s")).toBeInTheDocument();
   });
 });
 

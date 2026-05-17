@@ -1,13 +1,33 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
-import { Bell, Copy, Minus, PanelLeftClose, PanelLeftOpen, Settings, Square, X } from "lucide-react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bell, Copy, Download, Info, Minus, PanelLeftClose, PanelLeftOpen, RefreshCw, Settings, Square, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { navigationItems } from "../../app/navigation";
 import { type AccessActivation, usePreferencesStore } from "../../app/preferencesStore";
 import { activateAccess } from "../../core/access/accessActivation";
+import { ApiClient } from "../../core/api/apiClient";
 import { getMachineCodeInfo, type MachineCodeInfo } from "../../core/access/machineCode";
-import { controlWindow, copyText, getWindowState, onWindowStateChange, supportsWindowStateBridge, type WindowControlAction, type WindowState } from "../../core/desktop/desktopBridge";
+import {
+  checkForInstallerUpdate,
+  controlWindow,
+  copyText,
+  downloadInstallerUpdate,
+  getAppVersion,
+  getWindowState,
+  installInstallerUpdate,
+  onUpdateStatus,
+  onWindowStateChange,
+  supportsWindowStateBridge,
+  type InstallerUpdateStatus,
+  type WindowControlAction,
+  type WindowState
+} from "../../core/desktop/desktopBridge";
 import { errorMessage } from "../../core/format/error";
+import { checkLatestAppVersion, type AppVersionCheckResult } from "../../features/appVersion/versionApi";
+import { formatBytes, formatSpeed, nextUpdatePhaseLabel, type UpdateModalPhase, updateCanClose } from "../../features/appVersion/updateViewModel";
+import { MarkdownContent } from "./MarkdownContent";
 import { Sidebar } from "./Sidebar";
+
+type AppVersionInfo = { isPackaged: boolean; version: string };
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -23,8 +43,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const setSidebarCollapsed = usePreferencesStore((state) => state.setSidebarCollapsed);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [messageCenterOpen, setMessageCenterOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [machineInfo, setMachineInfo] = useState<MachineCodeInfo | null>(null);
+  const [appVersion, setAppVersion] = useState<AppVersionInfo>({ isPackaged: false, version: "0.1.0" });
+  const [updateCheck, setUpdateCheck] = useState<AppVersionCheckResult | null>(null);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [installerStatus, setInstallerStatus] = useState<InstallerUpdateStatus>({ appVersion: "0.1.0", phase: "idle" });
+  const [updateStatusText, setUpdateStatusText] = useState("");
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [windowState, setWindowState] = useState<WindowState>({ isFullScreen: false, isMaximized: false });
+  const autoCheckedVersionRef = useRef<string | null>(null);
+  const installRequestedRef = useRef(false);
+  const apiClient = useMemo(
+    () => new ApiClient({ accessProvider: () => accessActivation, baseUrl: apiBaseUrl }),
+    [accessActivation, apiBaseUrl]
+  );
 
   const className = useMemo(
     () => [
@@ -35,6 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     ].filter(Boolean).join(" "),
     [motionEnabled, sidebarCollapsed, windowState.isFullScreen, windowState.isMaximized]
   );
+  const forcedUpdateLocked = Boolean(updateModalOpen && updateCheck?.forceUpdate);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -86,6 +120,99 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [accessActivation?.machineCode, accessActivation?.machineCodeVersion]);
 
+  const requestInstallUpdate = useCallback(async () => {
+    if (installRequestedRef.current) {
+      return;
+    }
+    installRequestedRef.current = true;
+    await installInstallerUpdate();
+  }, []);
+
+  useEffect(() => {
+    if (!window.niuniu?.getAppVersion) {
+      return undefined;
+    }
+    let mounted = true;
+    void getAppVersion().then((version) => {
+      if (mounted) {
+        setAppVersion(version);
+        setInstallerStatus((status) => ({ ...status, appVersion: version.version }));
+      }
+    });
+    const unsubscribe = onUpdateStatus((status) => {
+      setInstallerStatus(status);
+      if (status.phase === "error") {
+        setUpdateStatusText(status.error || "更新失败，请稍后重试。");
+      }
+      if (status.phase === "downloaded") {
+        void requestInstallUpdate();
+      }
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [requestInstallUpdate]);
+
+  const runVersionCheck = useCallback(async (source: "auto" | "manual" = "manual") => {
+    if (!accessActivation) {
+      if (source === "manual") {
+        setUpdateStatusText("请先完成体验码或邀请码激活，再检查版本更新。");
+      }
+      return;
+    }
+    setCheckingUpdate(true);
+    setUpdateStatusText(source === "manual" ? "正在检查更新..." : "");
+    try {
+      const current = appVersion.version || "0.1.0";
+      const result = await checkLatestAppVersion({ client: apiClient, currentVersion: current });
+      setUpdateCheck(result);
+      if (result.hasUpdate) {
+        setInstallerStatus({ appVersion: current, phase: "available", info: { version: result.latestVersion } });
+        setUpdateModalOpen(true);
+        setUpdateStatusText("");
+      } else if (source === "manual") {
+        await checkForInstallerUpdate();
+        setUpdateStatusText("当前已是最新版本。");
+      }
+    } catch (error) {
+      if (source === "manual") {
+        setUpdateStatusText(errorMessage(error));
+      }
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }, [accessActivation, apiClient, appVersion.version]);
+
+  const runDownloadUpdate = useCallback(async () => {
+    setUpdateStatusText("");
+    installRequestedRef.current = false;
+    setInstallerStatus((status) => ({
+      appVersion: status.appVersion || appVersion.version,
+      phase: "downloading",
+      progress: "progress" in status ? status.progress : { bytesPerSecond: 0, percent: 0, total: updateCheck?.fileSize ?? 0, transferred: 0 }
+    }));
+    try {
+      await checkForInstallerUpdate();
+      const status = await downloadInstallerUpdate();
+      setInstallerStatus(status);
+      if (status.phase === "downloaded") {
+        await requestInstallUpdate();
+      }
+    } catch (error) {
+      setInstallerStatus({ appVersion: appVersion.version, error: errorMessage(error), phase: "error" });
+      setUpdateStatusText(errorMessage(error));
+    }
+  }, [appVersion.version, requestInstallUpdate, updateCheck?.fileSize]);
+
+  useEffect(() => {
+    if (!window.niuniu?.getAppVersion || !accessActivation || !appVersion.version || autoCheckedVersionRef.current === appVersion.version) {
+      return;
+    }
+    autoCheckedVersionRef.current = appVersion.version;
+    void runVersionCheck("auto");
+  }, [accessActivation, appVersion.version, runVersionCheck]);
+
   return (
     <div className={className} data-theme={theme}>
       <div className="backdrop" aria-hidden="true">
@@ -97,7 +224,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <section className="window-shell">
         <header className="titlebar">
           <div className="window-lights">
-            <WindowLight action="close" className="light-close" label="关闭窗口" />
+            <WindowLight action="close" className="light-close" disabled={forcedUpdateLocked} label="关闭窗口" />
             <WindowLight action="minimize" className="light-min" label="最小化窗口" />
             <WindowLight action="toggle-maximize" className="light-max" label="最大化或还原窗口" />
           </div>
@@ -118,6 +245,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
             <button className="icon-button" onClick={() => setMessageCenterOpen(true)} title="消息中心" type="button">
               <Bell size={15} />
+            </button>
+            <button aria-label="关于牛牛开盘" className="icon-button" onClick={() => setAboutOpen(true)} title="关于牛牛开盘" type="button">
+              <Info size={15} />
             </button>
             <button className="icon-button" onClick={() => setSettingsOpen(true)} title="设置" type="button">
               <Settings size={15} />
@@ -149,6 +279,25 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {settingsOpen ? <SettingsPanel onClose={() => setSettingsOpen(false)} /> : null}
       {messageCenterOpen ? <MessageCenterPanel onClose={() => setMessageCenterOpen(false)} /> : null}
+      {aboutOpen ? (
+        <AboutDialog
+          appVersion={appVersion}
+          checking={checkingUpdate}
+          machineInfo={machineInfo}
+          onCheckUpdate={() => void runVersionCheck("manual")}
+          onClose={() => setAboutOpen(false)}
+          statusText={updateStatusText}
+        />
+      ) : null}
+      {updateModalOpen && updateCheck ? (
+        <UpdateDialog
+          check={updateCheck}
+          installerStatus={installerStatus}
+          onClose={() => setUpdateModalOpen(false)}
+          onDownload={() => void runDownloadUpdate()}
+          statusText={updateStatusText}
+        />
+      ) : null}
       {!inviteAcknowledged ? (
         <InvitationNoticeDialog
           apiBaseUrl={apiBaseUrl}
@@ -160,10 +309,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-function WindowLight({ action, className, label }: { action: WindowControlAction; className: string; label: string }) {
+function WindowLight({ action, className, disabled = false, label }: { action: WindowControlAction; className: string; disabled?: boolean; label: string }) {
   const Icon = action === "close" ? X : action === "minimize" ? Minus : Square;
   return (
-    <button aria-label={label} className={className} onClick={() => void controlWindow(action)} title={label} type="button">
+    <button aria-label={label} className={className} disabled={disabled} onClick={() => void controlWindow(action)} title={label} type="button">
       <Icon size={8} strokeWidth={3} />
     </button>
   );
@@ -239,6 +388,159 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
       </section>
     </div>
   );
+}
+
+function AboutDialog({
+  appVersion,
+  checking,
+  machineInfo,
+  onCheckUpdate,
+  onClose,
+  statusText
+}: {
+  appVersion: AppVersionInfo;
+  checking: boolean;
+  machineInfo: MachineCodeInfo | null;
+  onCheckUpdate: () => void;
+  onClose: () => void;
+  statusText: string;
+}) {
+  const machineCode = machineInfo?.machineCode ?? "";
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section aria-label="关于牛牛开盘" className="about-dialog" role="dialog">
+        <header className="card-head about-dialog-head">
+          <div>
+            <span className="card-eyebrow">NIUNIU REVIEW STUDIO</span>
+            <b>关于牛牛开盘</b>
+          </div>
+          <button aria-label="关闭关于" className="ghost-button" onClick={onClose} type="button">
+            关闭
+          </button>
+        </header>
+
+        <div className="about-product-row">
+          <div className="about-product-mark" aria-hidden="true">牛</div>
+          <div>
+            <strong>牛牛开盘</strong>
+            <span>复盘、竞价与 AI 分析工作台</span>
+          </div>
+        </div>
+
+        <div className="about-info-grid">
+          <article>
+            <span>当前版本</span>
+            <button className="version-link-button" disabled={checking} onClick={onCheckUpdate} type="button">
+              {appVersion.version}
+            </button>
+          </article>
+          <article>
+            <span>运行形态</span>
+            <b>{appVersion.isPackaged ? "安装版" : "开发预览"}</b>
+          </article>
+        </div>
+
+        <div className="about-machine-card">
+          <span>机器码</span>
+          <code>{machineCode || "读取中..."}</code>
+          <button aria-label="复制关于页机器码" className="icon-button" disabled={!machineCode} onClick={() => void copyText(machineCode)} title="复制机器码" type="button">
+            <Copy size={14} />
+          </button>
+        </div>
+
+        {statusText ? <p className="about-status-text">{statusText}</p> : null}
+
+        <footer className="settings-actions">
+          <button className="ghost-button icon-label" disabled={checking} onClick={onCheckUpdate} type="button">
+            <RefreshCw size={14} />
+            {checking ? "检查中" : "检查更新"}
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function UpdateDialog({
+  check,
+  installerStatus,
+  onClose,
+  onDownload,
+  statusText
+}: {
+  check: AppVersionCheckResult;
+  installerStatus: InstallerUpdateStatus;
+  onClose: () => void;
+  onDownload: () => void;
+  statusText: string;
+}) {
+  const phase = toUpdateModalPhase(installerStatus.phase);
+  const canClose = updateCanClose({ forceUpdate: check.forceUpdate, phase });
+  const progress = installerStatus.phase === "downloading" ? installerStatus.progress : null;
+  const percent = Math.max(0, Math.min(100, Math.round(progress?.percent ?? 0)));
+  const notes = check.releaseNotesMarkdown || check.releaseNotesText || "本次更新暂无详细公告。";
+
+  return (
+    <div className={`modal-backdrop update-backdrop${check.forceUpdate ? " locked" : ""}`} role="presentation">
+      <section aria-label="版本更新" className="update-dialog" role="dialog">
+        <header className="card-head update-dialog-head">
+          <div>
+            <span className="card-eyebrow">{check.forceUpdate ? "FORCE UPDATE" : "UPDATE AVAILABLE"}</span>
+            <b>发现新版本 {check.latestVersion}</b>
+            <p>当前版本 {check.currentVersion} · {check.forceUpdate ? "强制更新" : "普通更新"}</p>
+          </div>
+          {canClose ? (
+            <button aria-label="关闭版本更新" className="ghost-button" onClick={onClose} type="button">
+              关闭
+            </button>
+          ) : null}
+        </header>
+
+        <div className="version-check-card">
+          <span>{nextUpdatePhaseLabel(phase)}</span>
+          <b>{phase === "downloading" ? `${percent}%` : check.latestVersion}</b>
+        </div>
+
+        <div className="update-release-notes">
+          <MarkdownContent value={notes} />
+        </div>
+
+        {progress ? (
+          <div className="update-progress-card">
+            <div className="update-progress-bar" aria-label="下载进度">
+              <i className="update-progress-fill" style={{ width: `${percent}%` }} />
+            </div>
+            <div className="update-progress-meta">
+              <span>{formatBytes(progress.transferred)} / {formatBytes(progress.total)}</span>
+              <b>{formatSpeed(progress.bytesPerSecond)}</b>
+            </div>
+          </div>
+        ) : null}
+
+        {statusText ? <p className="update-status-text">{statusText}</p> : null}
+
+        <footer className="settings-actions update-actions">
+          {canClose ? (
+            <button className="ghost-button" onClick={onClose} type="button">
+              稍后再说
+            </button>
+          ) : null}
+          <button className="primary-button icon-label" disabled={phase === "downloading" || phase === "installing"} onClick={onDownload} type="button">
+            <Download size={15} />
+            {phase === "error" ? "重试下载" : "立即更新"}
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function toUpdateModalPhase(phase: InstallerUpdateStatus["phase"]): UpdateModalPhase {
+  if (phase === "idle") {
+    return "available";
+  }
+  return phase;
 }
 
 function InvitationNoticeDialog({
