@@ -2,17 +2,17 @@
 
 type InstallerUpdateStatus =
   | {
-      status: "idle" | "checking" | "not-available" | "installing";
+      phase: "idle" | "checking" | "not-available" | "installing";
       appVersion: string;
       info?: unknown;
     }
   | {
-      status: "available" | "downloaded";
+      phase: "available" | "downloaded";
       appVersion: string;
       info: unknown;
     }
   | {
-      status: "downloading";
+      phase: "downloading";
       appVersion: string;
       info?: unknown;
       progress: {
@@ -23,7 +23,7 @@ type InstallerUpdateStatus =
       };
     }
   | {
-      status: "error";
+      phase: "error";
       appVersion: string;
       error: string;
     };

@@ -7,17 +7,17 @@ export type StockLinkOptions = {
 
 export type InstallerUpdateStatus =
   | {
-      status: "idle" | "checking" | "not-available" | "installing";
+      phase: "idle" | "checking" | "not-available" | "installing";
       appVersion: string;
       info?: unknown;
     }
   | {
-      status: "available" | "downloaded";
+      phase: "available" | "downloaded";
       appVersion: string;
       info: unknown;
     }
   | {
-      status: "downloading";
+      phase: "downloading";
       appVersion: string;
       info?: unknown;
       progress: {
@@ -28,7 +28,7 @@ export type InstallerUpdateStatus =
       };
     }
   | {
-      status: "error";
+      phase: "error";
       appVersion: string;
       error: string;
     };
@@ -56,7 +56,7 @@ export type WindowControlAction = "close" | "minimize" | "toggle-maximize";
 export type WindowState = { isFullScreen: boolean; isMaximized: boolean };
 
 const fallbackUpdateStatus: InstallerUpdateStatus = {
-  status: "idle",
+  phase: "idle",
   appVersion: "0.1.0"
 };
 

@@ -3,17 +3,17 @@ import { autoUpdater, type ProgressInfo, type UpdateInfo } from "electron-update
 
 export type UpdateStatus =
   | {
-      status: "idle" | "checking" | "not-available" | "installing";
+      phase: "idle" | "checking" | "not-available" | "installing";
       appVersion: string;
       info?: UpdateInfo;
     }
   | {
-      status: "available" | "downloaded";
+      phase: "available" | "downloaded";
       appVersion: string;
       info: UpdateInfo;
     }
   | {
-      status: "downloading";
+      phase: "downloading";
       appVersion: string;
       info?: UpdateInfo;
       progress: {
@@ -24,13 +24,13 @@ export type UpdateStatus =
       };
     }
   | {
-      status: "error";
+      phase: "error";
       appVersion: string;
       error: string;
     };
 
 let latestStatus: UpdateStatus = {
-  status: "idle",
+  phase: "idle",
   appVersion: app.getVersion()
 };
 
@@ -63,32 +63,32 @@ export function registerUpdaterIpc() {
   autoUpdater.autoInstallOnAppQuit = false;
 
   autoUpdater.on("checking-for-update", () => {
-    setStatus({ status: "checking", appVersion: appVersion() });
+    setStatus({ phase: "checking", appVersion: appVersion() });
   });
 
   autoUpdater.on("update-available", (info) => {
-    setStatus({ status: "available", appVersion: appVersion(), info });
+    setStatus({ phase: "available", appVersion: appVersion(), info });
   });
 
   autoUpdater.on("update-not-available", (info) => {
-    setStatus({ status: "not-available", appVersion: appVersion(), info });
+    setStatus({ phase: "not-available", appVersion: appVersion(), info });
   });
 
   autoUpdater.on("download-progress", (progress) => {
     setStatus({
-      status: "downloading",
+      phase: "downloading",
       appVersion: appVersion(),
       progress: toProgress(progress)
     });
   });
 
   autoUpdater.on("update-downloaded", (info) => {
-    setStatus({ status: "downloaded", appVersion: appVersion(), info });
+    setStatus({ phase: "downloaded", appVersion: appVersion(), info });
   });
 
   autoUpdater.on("error", (error) => {
     setStatus({
-      status: "error",
+      phase: "error",
       appVersion: appVersion(),
       error: error instanceof Error ? error.message : String(error)
     });
@@ -103,7 +103,7 @@ export function registerUpdaterIpc() {
 
   ipcMain.handle("niuniu:update-check", async () => {
     if (!app.isPackaged) {
-      setStatus({ status: "not-available", appVersion: appVersion() });
+      setStatus({ phase: "not-available", appVersion: appVersion() });
       return latestStatus;
     }
     await autoUpdater.checkForUpdates();
@@ -113,7 +113,7 @@ export function registerUpdaterIpc() {
   ipcMain.handle("niuniu:update-download", async () => {
     if (!app.isPackaged) {
       setStatus({
-        status: "downloading",
+        phase: "downloading",
         appVersion: appVersion(),
         progress: {
           percent: 100,
@@ -123,7 +123,7 @@ export function registerUpdaterIpc() {
         }
       });
       setStatus({
-        status: "downloaded",
+        phase: "downloaded",
         appVersion: appVersion(),
         info: {
           version: appVersion(),
@@ -140,7 +140,7 @@ export function registerUpdaterIpc() {
   });
 
   ipcMain.handle("niuniu:update-install", async () => {
-    setStatus({ status: "installing", appVersion: appVersion() });
+    setStatus({ phase: "installing", appVersion: appVersion() });
     if (app.isPackaged) {
       autoUpdater.quitAndInstall(false, true);
     }
