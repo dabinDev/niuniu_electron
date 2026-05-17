@@ -125,6 +125,10 @@ try {
     throw "Main window is not visible."
   }
 
+  if ($windowProcess.MainWindowTitle -eq "Error") {
+    throw "Packaged app opened an Electron error window instead of the client UI."
+  }
+
   [void][WindowSmokeNative]::ShowWindow($handle, 3)
   Wait-ForWindowCondition -Handle $handle -Label "maximized packaged window" -Predicate { [WindowSmokeNative]::IsZoomed($handle) } | Out-Null
 

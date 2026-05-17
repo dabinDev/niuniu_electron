@@ -218,6 +218,8 @@ a {
 }
 
 .app-root[data-theme="light"] .auction-stock-list article:hover,
+.app-root[data-theme="light"] .auction-rank-row:hover,
+.app-root[data-theme="light"] .auction-rank-row.selected,
 .app-root[data-theme="light"] .data-row:hover,
 .app-root[data-theme="light"] .plate-rank-list button:hover,
 .app-root[data-theme="light"] .node-date-list button:hover,
@@ -229,6 +231,46 @@ a {
     var(--surface-hover);
 }
 
+.app-root[data-theme="light"] .auction-rank-card .card-head {
+  border-bottom-color: rgba(217, 47, 69, .12);
+}
+
+.app-root[data-theme="light"] .auction-rank-row {
+  border-color: rgba(17, 24, 39, .095);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .74), rgba(235, 241, 250, .56)),
+    var(--surface-1);
+  box-shadow: 0 8px 18px rgba(21, 28, 40, .055);
+}
+
+.app-root[data-theme="light"] .auction-rank-row.tone-up {
+  background:
+    linear-gradient(90deg, rgba(217, 47, 69, .09), rgba(183, 121, 8, .035) 48%, rgba(255, 255, 255, .72)),
+    var(--surface-1);
+}
+
+.app-root[data-theme="light"] .auction-rank-row.tone-down {
+  background:
+    linear-gradient(90deg, rgba(5, 150, 105, .09), rgba(7, 137, 167, .035) 48%, rgba(255, 255, 255, .72)),
+    var(--surface-1);
+}
+
+.app-root[data-theme="light"] .auction-rank-row:hover,
+.app-root[data-theme="light"] .auction-rank-row.selected {
+  border-color: rgba(217, 47, 69, .24);
+  box-shadow: inset 3px 0 0 var(--red), 0 12px 24px rgba(21, 28, 40, .08);
+}
+
+.app-root[data-theme="light"] .auction-rank-row.tone-down:hover,
+.app-root[data-theme="light"] .auction-rank-row.tone-down.selected {
+  border-color: rgba(5, 150, 105, .24);
+  box-shadow: inset 3px 0 0 var(--green), 0 12px 24px rgba(21, 28, 40, .08);
+}
+
+.app-root[data-theme="light"] .auction-rank-board {
+  background: rgba(255, 255, 255, .58);
+  border-color: rgba(17, 24, 39, .09);
+}
 
 .app-root[data-theme="light"] .trade-date-nav,
 .app-root[data-theme="light"] .ask-workbench,
@@ -3988,6 +4030,18 @@ a {
   white-space: nowrap;
 }
 
+.invite-code-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.invite-code-grid .ghost-button {
+  height: 40px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
 
 .invite-status-text {
   margin-right: auto;
@@ -4012,6 +4066,11 @@ a {
   box-shadow: 0 14px 32px rgba(91, 140, 255, .3), inset 0 1px 0 rgba(255, 255, 255, .28);
 }
 
+@media (max-width: 680px) {
+  .invite-code-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 .sheet-backdrop {
   place-items: stretch end;
@@ -4504,6 +4563,188 @@ a {
   text-overflow: ellipsis;
 }
 
+.auction-rank-workbench {
+  align-items: stretch;
+}
+
+.auction-rank-card {
+  min-height: calc(100vh - 430px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.auction-rank-card .card-head {
+  border-bottom-color: rgba(255, 77, 85, .16);
+}
+
+.auction-rank-list {
+  min-height: 340px;
+  max-height: none;
+  overflow: auto;
+  padding: 10px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  scrollbar-gutter: stable;
+}
+
+.auction-rank-row {
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid rgba(255, 255, 255, .085);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .064), rgba(255, 255, 255, .024)),
+    rgba(255, 255, 255, .026);
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 44px minmax(132px, 1.2fr) minmax(84px, .72fr) minmax(84px, .72fr) minmax(96px, .8fr) minmax(72px, .58fr) minmax(150px, 1.15fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.auction-rank-row.tone-up {
+  background:
+    linear-gradient(90deg, rgba(255, 77, 85, .12), rgba(245, 158, 11, .038) 46%, rgba(255, 255, 255, .025)),
+    rgba(255, 255, 255, .028);
+}
+
+.auction-rank-row.tone-down {
+  background:
+    linear-gradient(90deg, rgba(24, 195, 126, .12), rgba(32, 212, 244, .035) 46%, rgba(255, 255, 255, .025)),
+    rgba(255, 255, 255, .028);
+}
+
+.auction-rank-row:hover,
+.auction-rank-row.selected {
+  transform: translateY(-1px);
+  border-color: rgba(255, 77, 85, .3);
+  background:
+    linear-gradient(90deg, rgba(255, 77, 85, .15), rgba(245, 158, 11, .05) 52%, rgba(255, 255, 255, .035)),
+    var(--surface-hover);
+  box-shadow: inset 3px 0 0 var(--red), 0 12px 24px rgba(255, 77, 85, .08);
+}
+
+.auction-rank-row.tone-down:hover,
+.auction-rank-row.tone-down.selected {
+  border-color: rgba(24, 195, 126, .28);
+  background:
+    linear-gradient(90deg, rgba(24, 195, 126, .14), rgba(32, 212, 244, .045) 52%, rgba(255, 255, 255, .035)),
+    var(--surface-hover);
+  box-shadow: inset 3px 0 0 var(--green), 0 12px 24px rgba(24, 195, 126, .08);
+}
+
+.auction-rank-no {
+  justify-self: start;
+  min-width: 32px;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 860;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.auction-rank-no.top {
+  color: var(--amber);
+}
+
+.auction-rank-main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.auction-rank-main strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 860;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auction-rank-main em,
+.auction-rank-pill small,
+.auction-rank-amount small {
+  color: var(--text-faint);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 720;
+  line-height: 1.1;
+}
+
+.auction-rank-pill,
+.auction-rank-amount {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 0 2px;
+}
+
+.auction-rank-pill b,
+.auction-rank-amount b {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 880;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.auction-rank-pill.trend-up b {
+  color: var(--red-strong);
+}
+
+.auction-rank-pill.trend-down b {
+  color: var(--green-strong);
+}
+
+.auction-rank-pill.trend-neutral b {
+  color: var(--text-soft);
+}
+
+.auction-rank-board {
+  justify-self: start;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .04);
+  color: var(--text-soft);
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 780;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auction-rank-concept {
+  min-width: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 680;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .auction-rank-row {
+    grid-template-columns: 38px minmax(122px, 1fr) repeat(3, minmax(76px, .64fr));
+  }
+
+  .auction-rank-board,
+  .auction-rank-concept {
+    grid-column: span 2;
+  }
+}
 
 .height-chart {
   height: 250px;

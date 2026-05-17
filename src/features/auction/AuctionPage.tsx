@@ -13,13 +13,14 @@ import { GlassCard } from "../../shared/components/GlassCard";
 import { LoadingState } from "../../shared/components/LoadingState";
 import { PageHeader } from "../../shared/components/PageHeader";
 import { SegmentedTabs } from "../../shared/components/SegmentedTabs";
-import { DataTable } from "../../shared/components/DataTable";
 import { AiAnalysisPanel } from "../../shared/components/AiAnalysisPanel";
 import { AutoRefreshToggle } from "../../shared/components/AutoRefreshToggle";
 import { StockProfileSheet } from "../../shared/components/StockProfileSheet";
 import { WorkspaceSummaryBar } from "../../shared/components/WorkspaceSummaryBar";
 import { buildAskAiClientConfig, buildAskAiSyncPayload, loadAskAiSettings } from "../askAi/askAiSettings";
 import { useAiFeatureUsage } from "../askAi/useAiFeatureUsage";
+
+const AUCTION_RANK_DISPLAY_KEYS = ["code", "name", "bid_change_pct", "current_change_pct", "bid_amount_wan", "board_text", "concept"];
 
 export function AuctionPage() {
   const client = useApiClient();
@@ -69,18 +70,10 @@ export function AuctionPage() {
   const historyColumns = getRecords(data, "history_columns");
   const rankSections = getRecords(data, "rank_sections");
   const currentRank = rankSections.find((section) => getString(section, "key") === activeRank) ?? rankSections[0];
+  const currentRankItems = currentRank ? getRecords(currentRank, "items") : [];
   const currentRankTable = currentRank
-    ? recordListToTable(getRecords(currentRank, "items"), ["code", "name", "bid_change_pct", "current_change_pct", "bid_amount_wan", "board_text", "concept", "action"])
+    ? recordListToTable(currentRankItems, AUCTION_RANK_DISPLAY_KEYS)
     : { columns: [], rows: [] };
-  const currentRankRows = currentRankTable.rows.map((row) => ({
-    ...row,
-    onClick: () => setSelectedStock(String(row.values.code ?? "")),
-    values: {
-      ...row.values,
-      bid_change_pct: formatPercentValue(row.values.bid_change_pct),
-      current_change_pct: formatPercentValue(row.values.current_change_pct)
-    }
-  }));
   const rankTotal = rankSections.reduce((sum, section) => sum + getRecords(section, "items").length, 0);
   const liveColumn = historyColumns[0];
   const sheets = tablesToSheets(
@@ -137,8 +130,9 @@ export function AuctionPage() {
         ))}
       </section>
 
-      <section className="content-grid two-one">
+      <section className="content-grid two-one auction-rank-workbench">
         <GlassCard
+          className="auction-rank-card"
           actions={
             rankSections.length > 0 ? (
               <SegmentedTabs
@@ -150,10 +144,10 @@ export function AuctionPage() {
           }
           title={getString(currentRank ?? {}, "title", "竞价排名")}
         >
-          {currentRankTable.rows.length === 0 ? (
+          {currentRankItems.length === 0 ? (
             <EmptyState action="切换排名分组" description="当前排名分组为空，可能是竞价条件没有命中。" hint={getString(currentRank ?? {}, "title", "")} title="排名暂无数据" tone="market" />
           ) : (
-            <DataTable columns={currentRankTable.columns} rows={currentRankRows} />
+            <AuctionRankList items={currentRankItems} onSelect={setSelectedStock} selectedStock={selectedStock} />
           )}
         </GlassCard>
         <AiAnalysisPanel ai={asRecord(data.ai_analysis)} loading={aiMutation.isPending} onGenerate={() => aiMutation.mutate()} quota={aiUsage.usage} title="竞价 AI 分析" />
@@ -163,8 +157,70 @@ export function AuctionPage() {
   );
 }
 
+function AuctionRankList({ items, onSelect, selectedStock }: { items: Record<string, unknown>[]; onSelect: (code: string) => void; selectedStock: string | null }) {
+  return (
+    <div className="auction-rank-list" role="list">
+      {items.map((item, index) => {
+        const code = getString(item, "code", "--");
+        const name = getString(item, "name", "--");
+        const bidChange = formatPercentValue(item.bid_change_pct);
+        const currentChange = formatPercentValue(item.current_change_pct);
+        const bidTone = changeTone(bidChange);
+        const currentTone = changeTone(currentChange);
+        return (
+          <button className={`auction-rank-row tone-${bidTone} ${selectedStock === code ? "selected" : ""}`} key={`${code}-${index}`} onClick={() => onSelect(code)} role="listitem" type="button">
+            <span className={`auction-rank-no ${index < 3 ? "top" : ""}`}>{String(index + 1).padStart(2, "0")}</span>
+            <span className="auction-rank-main">
+              <strong>{name}</strong>
+              <em>{code}</em>
+            </span>
+            <span className={`auction-rank-pill trend-${bidTone}`}>
+              <small>竞价</small>
+              <b>{bidChange}</b>
+            </span>
+            <span className={`auction-rank-pill trend-${currentTone}`}>
+              <small>当前</small>
+              <b>{currentChange}</b>
+            </span>
+            <span className="auction-rank-amount">
+              <small>竞价额</small>
+              <b>{formatWanValue(item.bid_amount_wan)}</b>
+            </span>
+            <span className="auction-rank-board">{cleanDisplayText(getString(item, "board_text", "--"))}</span>
+            <span className="auction-rank-concept">{cleanDisplayText(getString(item, "concept", "--"))}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function formatPercentValue(value: unknown): string {
   const trimmed = String(value ?? "").trim();
   if (!trimmed || trimmed === "--") return "--";
   return trimmed.endsWith("%") ? trimmed : `${trimmed}%`;
+}
+
+function formatWanValue(value: unknown): string {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed || trimmed === "--") return "--";
+  if (/万|亿|元/i.test(trimmed)) return trimmed;
+  const parsed = Number(trimmed.replace(/,/g, ""));
+  if (!Number.isFinite(parsed)) return trimmed;
+  if (Math.abs(parsed) >= 10000) {
+    return `${formatNumber(parsed / 10000)}亿`;
+  }
+  return `${formatNumber(parsed)}万`;
+}
+
+function formatNumber(value: number): string {
+  return value.toLocaleString("zh-CN", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0
+  });
+}
+
+function cleanDisplayText(value: string): string {
+  const trimmed = value.trim();
+  return trimmed && trimmed !== "null" && trimmed !== "None" ? trimmed : "--";
 }

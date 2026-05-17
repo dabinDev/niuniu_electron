@@ -77,7 +77,7 @@ describe("AuctionPage", () => {
     expect(within(stockCard as HTMLElement).getByText(/9\.98%/)).toBeInTheDocument();
   });
 
-  it("shows percent units for bid and current change columns in rank tables", async () => {
+  it("shows percent units for bid and current change values in the rank list", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request) => {
       const requestUrl = String(url);
       if (requestUrl.includes("/api/v1/ask-ai/usage-status")) {
@@ -87,7 +87,7 @@ describe("AuctionPage", () => {
         ...snapshot,
         rank_sections: [
           {
-            items: [{ bid_change_pct: "4.32", code: "000002", current_change_pct: "8.76", name: "浜屽彿鑲′唤" }],
+            items: [{ action: "limit by backend", bid_amount_wan: "1234.5", bid_change_pct: "4.32", board_text: "2板", code: "000002", concept: "机器人", current_change_pct: "8.76", name: "浜屽彿鑲′唤" }],
             key: "hot",
             title: "寮哄娍绔炰环",
             total: 1
@@ -99,10 +99,12 @@ describe("AuctionPage", () => {
     const { container } = renderWithClient(fetchMock);
 
     expect(await screen.findByText("浜屽彿鑲′唤")).toBeInTheDocument();
-    const table = container.querySelector(".data-table");
-    expect(table).toBeInTheDocument();
-    expect(within(table as HTMLElement).getByText("4.32%")).toBeInTheDocument();
-    expect(within(table as HTMLElement).getByText("8.76%")).toBeInTheDocument();
+    const list = container.querySelector(".auction-rank-list");
+    expect(list).toBeInTheDocument();
+    expect(within(list as HTMLElement).getByText("4.32%")).toBeInTheDocument();
+    expect(within(list as HTMLElement).getByText("8.76%")).toBeInTheDocument();
+    expect(within(list as HTMLElement).getByText("1,234.5万")).toBeInTheDocument();
+    expect(within(list as HTMLElement).queryByText(/limit by/i)).not.toBeInTheDocument();
   });
 });
 

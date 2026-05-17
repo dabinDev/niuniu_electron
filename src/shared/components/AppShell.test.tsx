@@ -327,6 +327,44 @@ describe("AppShell", () => {
     );
   });
 
+  it("accepts a non-empty trial code and activates it as trial access", async () => {
+    const fetchMock = mockActivationEnvironment("trial_code_access", "trial");
+    usePreferencesStore.setState({
+      accessActivation: null,
+      inviteAccessMode: null,
+      inviteAcknowledged: false,
+      inviteCode: ""
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/overview"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    const input = await screen.findByLabelText("体验码");
+    await userEvent.type(input, "  TRIAL-CODE-001  ");
+    await userEvent.click(screen.getByRole("button", { name: "验证体验码" }));
+
+    expect(screen.queryByRole("dialog", { name: "牛牛开盘使用声明与邀请验证" })).not.toBeInTheDocument();
+    expect(usePreferencesStore.getState().inviteAcknowledged).toBe(true);
+    expect(usePreferencesStore.getState().inviteAccessMode).toBe("trial");
+    expect(usePreferencesStore.getState().accessActivation?.accessId).toBe("trial_code_access");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:18081/api/v1/access/activate",
+      expect.objectContaining({
+        body: expect.stringContaining('"access_code":"TRIAL-CODE-001"')
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:18081/api/v1/access/activate",
+      expect.objectContaining({
+        body: expect.stringContaining('"access_type":"trial"')
+      })
+    );
+  });
 
   it("renders the machine code in the sidebar and copies it", async () => {
     const copyText = vi.fn(async () => ({ message: "ok", success: true }));

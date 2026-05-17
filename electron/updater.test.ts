@@ -14,14 +14,16 @@ vi.mock("electron", () => ({
 }));
 
 vi.mock("electron-updater", () => ({
-  autoUpdater: {
-    autoDownload: false,
-    autoInstallOnAppQuit: false,
-    checkForUpdates: vi.fn(),
-    downloadUpdate: vi.fn(),
-    on: vi.fn(),
-    quitAndInstall: vi.fn(),
-    setFeedURL: vi.fn()
+  default: {
+    autoUpdater: {
+      autoDownload: false,
+      autoInstallOnAppQuit: false,
+      checkForUpdates: vi.fn(),
+      downloadUpdate: vi.fn(),
+      on: vi.fn(),
+      quitAndInstall: vi.fn(),
+      setFeedURL: vi.fn()
+    }
   }
 }));
 
