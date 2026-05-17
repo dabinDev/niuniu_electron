@@ -394,6 +394,7 @@ describe("AppShell", () => {
 
   it("locks a forced update modal and renders installer download progress", async () => {
     let updateListener: ((status: { appVersion: string; phase: string; progress?: { bytesPerSecond: number; percent: number; total: number; transferred: number } }) => void) | null = null;
+    const checkForInstallerUpdate = vi.fn(async () => ({ appVersion: "0.1.0", phase: "available", info: { version: "0.2.0" } }));
     const downloadInstallerUpdate = vi.fn(async () => {
       updateListener?.({
         appVersion: "0.1.0",
@@ -420,7 +421,7 @@ describe("AppShell", () => {
       configurable: true,
       value: {
         appName: "NiuNiu",
-        checkForInstallerUpdate: vi.fn(async () => ({ appVersion: "0.1.0", phase: "available", info: { version: "0.2.0" } })),
+        checkForInstallerUpdate,
         downloadInstallerUpdate,
         getAppVersion: async () => ({ isPackaged: false, version: "0.1.0" }),
         getMachineCode: async () => ({ machineCode: "NN-EXISTING", version: "win-v1" }),
@@ -458,6 +459,7 @@ describe("AppShell", () => {
     await userEvent.click(screen.getByRole("button", { name: "立即更新" }));
 
     expect(downloadInstallerUpdate).toHaveBeenCalled();
+    expect(checkForInstallerUpdate).toHaveBeenCalledWith("https://example.com/electron_niuniu-0.2.0-setup.exe");
     expect(await screen.findByText("42%")).toBeInTheDocument();
     expect(screen.getByText("2.0 KB/s")).toBeInTheDocument();
   });

@@ -31,7 +31,7 @@ type InstallerUpdateStatus =
 interface Window {
   niuniu?: {
     appName: string;
-    checkForInstallerUpdate?: () => Promise<InstallerUpdateStatus>;
+    checkForInstallerUpdate?: (downloadUrl?: string) => Promise<InstallerUpdateStatus>;
     copyImageDataUrl?: (dataUrl: string) => Promise<{ message: string; success: boolean }>;
     copyText?: (text: string) => Promise<{ message: string; success: boolean }>;
     downloadInstallerUpdate?: () => Promise<InstallerUpdateStatus>;

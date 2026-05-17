@@ -33,6 +33,7 @@ let latestStatus: UpdateStatus = {
   phase: "idle",
   appVersion: app.getVersion()
 };
+let configuredFeedUrl = "";
 
 function broadcast(channel: string, payload: unknown) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -56,6 +57,30 @@ function toProgress(progress: ProgressInfo) {
 
 function appVersion() {
   return app.getVersion();
+}
+
+export function feedUrlFromDownloadUrl(downloadUrl: string): string {
+  const trimmed = downloadUrl.trim();
+  if (!trimmed) {
+    return "";
+  }
+  const parsed = new URL(trimmed);
+  parsed.search = "";
+  parsed.hash = "";
+  parsed.pathname = parsed.pathname.replace(/[^/]*$/, "");
+  return parsed.toString();
+}
+
+function configureFeed(downloadUrl: string | undefined) {
+  if (!downloadUrl) {
+    return;
+  }
+  const feedUrl = feedUrlFromDownloadUrl(downloadUrl);
+  if (!feedUrl || feedUrl === configuredFeedUrl) {
+    return;
+  }
+  autoUpdater.setFeedURL({ provider: "generic", url: feedUrl });
+  configuredFeedUrl = feedUrl;
 }
 
 export function registerUpdaterIpc() {
@@ -101,11 +126,12 @@ export function registerUpdaterIpc() {
 
   ipcMain.handle("niuniu:update-status", async () => latestStatus);
 
-  ipcMain.handle("niuniu:update-check", async () => {
+  ipcMain.handle("niuniu:update-check", async (_event, downloadUrl?: string) => {
     if (!app.isPackaged) {
       setStatus({ phase: "not-available", appVersion: appVersion() });
       return latestStatus;
     }
+    configureFeed(downloadUrl);
     await autoUpdater.checkForUpdates();
     return latestStatus;
   });

@@ -35,7 +35,7 @@ export type InstallerUpdateStatus =
 
 type DesktopBridge = {
   appName: string;
-  checkForInstallerUpdate?: () => Promise<InstallerUpdateStatus>;
+  checkForInstallerUpdate?: (downloadUrl?: string) => Promise<InstallerUpdateStatus>;
   copyImageDataUrl?: (dataUrl: string) => Promise<{ message: string; success: boolean }>;
   copyText?: (text: string) => Promise<{ message: string; success: boolean }>;
   downloadInstallerUpdate?: () => Promise<InstallerUpdateStatus>;
@@ -157,8 +157,8 @@ export async function getUpdateStatus(): Promise<InstallerUpdateStatus> {
   return window.niuniu?.getUpdateStatus?.() ?? fallbackUpdateStatus;
 }
 
-export async function checkForInstallerUpdate(): Promise<InstallerUpdateStatus> {
-  return window.niuniu?.checkForInstallerUpdate?.() ?? fallbackUpdateStatus;
+export async function checkForInstallerUpdate(downloadUrl?: string): Promise<InstallerUpdateStatus> {
+  return window.niuniu?.checkForInstallerUpdate?.(downloadUrl) ?? fallbackUpdateStatus;
 }
 
 export async function downloadInstallerUpdate(): Promise<InstallerUpdateStatus> {

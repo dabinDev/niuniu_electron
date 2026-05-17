@@ -193,7 +193,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       progress: "progress" in status ? status.progress : { bytesPerSecond: 0, percent: 0, total: updateCheck?.fileSize ?? 0, transferred: 0 }
     }));
     try {
-      await checkForInstallerUpdate();
+      await checkForInstallerUpdate(updateCheck?.downloadUrl);
       const status = await downloadInstallerUpdate();
       setInstallerStatus(status);
       if (status.phase === "downloaded") {

@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld("niuniu", {
   getUpdateStatus: () => ipcRenderer.invoke("niuniu:update-status"),
   getWindowState: () => ipcRenderer.invoke("niuniu:window-state"),
   getMachineCode: () => ipcRenderer.invoke("niuniu:machine-code"),
-  checkForInstallerUpdate: () => ipcRenderer.invoke("niuniu:update-check"),
+  checkForInstallerUpdate: (downloadUrl?: string) => ipcRenderer.invoke("niuniu:update-check", downloadUrl),
   downloadInstallerUpdate: () => ipcRenderer.invoke("niuniu:update-download"),
   installInstallerUpdate: () => ipcRenderer.invoke("niuniu:update-install"),
   onUpdateStatus: (listener: (status: unknown) => void) => {
