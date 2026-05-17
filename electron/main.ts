@@ -6,6 +6,7 @@ import { writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { registerUpdaterIpc } from "./updater.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = !app.isPackaged;
@@ -175,6 +176,7 @@ ipcMain.handle(
 );
 
 app.whenReady().then(() => {
+  registerUpdaterIpc();
   createWindow();
 
   app.on("activate", () => {

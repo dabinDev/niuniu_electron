@@ -5,12 +5,46 @@ export type StockLinkOptions = {
   thsPath?: string;
 };
 
+export type InstallerUpdateStatus =
+  | {
+      status: "idle" | "checking" | "not-available" | "installing";
+      appVersion: string;
+      info?: unknown;
+    }
+  | {
+      status: "available" | "downloaded";
+      appVersion: string;
+      info: unknown;
+    }
+  | {
+      status: "downloading";
+      appVersion: string;
+      info?: unknown;
+      progress: {
+        percent: number;
+        transferred: number;
+        total: number;
+        bytesPerSecond: number;
+      };
+    }
+  | {
+      status: "error";
+      appVersion: string;
+      error: string;
+    };
+
 type DesktopBridge = {
   appName: string;
+  checkForInstallerUpdate?: () => Promise<InstallerUpdateStatus>;
   copyImageDataUrl?: (dataUrl: string) => Promise<{ message: string; success: boolean }>;
   copyText?: (text: string) => Promise<{ message: string; success: boolean }>;
+  downloadInstallerUpdate?: () => Promise<InstallerUpdateStatus>;
+  getAppVersion?: () => Promise<{ version: string; isPackaged: boolean }>;
+  getUpdateStatus?: () => Promise<InstallerUpdateStatus>;
   getWindowState?: () => Promise<WindowState>;
   getMachineCode?: () => Promise<{ machineCode: string; version: string }>;
+  installInstallerUpdate?: () => Promise<InstallerUpdateStatus>;
+  onUpdateStatus?: (listener: (status: InstallerUpdateStatus) => void) => () => void;
   onWindowStateChange?: (listener: (state: WindowState) => void) => () => void;
   openExternal?: (url: string) => Promise<{ message: string; success: boolean }>;
   openStock?: (options: StockLinkOptions) => Promise<{ message: string; success: boolean }>;
@@ -20,6 +54,11 @@ type DesktopBridge = {
 
 export type WindowControlAction = "close" | "minimize" | "toggle-maximize";
 export type WindowState = { isFullScreen: boolean; isMaximized: boolean };
+
+const fallbackUpdateStatus: InstallerUpdateStatus = {
+  status: "idle",
+  appVersion: "0.1.0"
+};
 
 export async function copyText(text: string): Promise<string> {
   if (window.niuniu?.copyText) {
@@ -108,4 +147,28 @@ export function onWindowStateChange(listener: (state: WindowState) => void): () 
 
 export async function getDesktopMachineCode(): Promise<{ machineCode: string; version: string } | undefined> {
   return window.niuniu?.getMachineCode?.();
+}
+
+export async function getAppVersion(): Promise<{ version: string; isPackaged: boolean }> {
+  return window.niuniu?.getAppVersion?.() ?? { version: "0.1.0", isPackaged: false };
+}
+
+export async function getUpdateStatus(): Promise<InstallerUpdateStatus> {
+  return window.niuniu?.getUpdateStatus?.() ?? fallbackUpdateStatus;
+}
+
+export async function checkForInstallerUpdate(): Promise<InstallerUpdateStatus> {
+  return window.niuniu?.checkForInstallerUpdate?.() ?? fallbackUpdateStatus;
+}
+
+export async function downloadInstallerUpdate(): Promise<InstallerUpdateStatus> {
+  return window.niuniu?.downloadInstallerUpdate?.() ?? fallbackUpdateStatus;
+}
+
+export async function installInstallerUpdate(): Promise<InstallerUpdateStatus> {
+  return window.niuniu?.installInstallerUpdate?.() ?? fallbackUpdateStatus;
+}
+
+export function onUpdateStatus(listener: (status: InstallerUpdateStatus) => void): () => void {
+  return window.niuniu?.onUpdateStatus?.(listener) ?? (() => undefined);
 }
