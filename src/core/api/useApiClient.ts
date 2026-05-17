@@ -4,7 +4,11 @@ import { ApiClient } from "./apiClient";
 
 export function useApiClient(): ApiClient {
   const apiBaseUrl = usePreferencesStore((state) => state.apiBaseUrl);
-  return useMemo(() => new ApiClient({ baseUrl: apiBaseUrl }), [apiBaseUrl]);
+  const accessActivation = usePreferencesStore((state) => state.accessActivation);
+  return useMemo(
+    () => new ApiClient({ accessProvider: () => accessActivation, baseUrl: apiBaseUrl }),
+    [accessActivation, apiBaseUrl]
+  );
 }
 
 export function useApiBaseUrl(): string {

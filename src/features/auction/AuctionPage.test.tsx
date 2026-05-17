@@ -41,8 +41,12 @@ describe("AuctionPage", () => {
     const button = await screen.findByRole("button", { name: /今日额度已用完/ });
     expect(button).toBeDisabled();
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/api/v1/ask-ai/usage-status?client_id=electron-test"),
+      expect.stringContaining("/api/v1/ask-ai/usage-status"),
       expect.objectContaining({ method: "GET" })
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("usage-status?client_id="),
+      expect.anything()
     );
   });
 

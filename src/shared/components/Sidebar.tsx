@@ -1,10 +1,13 @@
 import clsx from "clsx";
+import { Copy } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { navigationItems } from "../../app/navigation";
 import brandIconUrl from "../../assets/brand/niuniu-client-icon.png";
 
 type SidebarProps = {
   collapsed: boolean;
+  machineCode?: string;
+  onCopyMachineCode?: () => void;
   onOpenMessageCenter?: () => void;
   onOpenSettings?: () => void;
   onToggle: () => void;
@@ -26,7 +29,7 @@ const navIconClassByPath = new Map([
   ["/jobs", "jobs"]
 ]);
 
-export function Sidebar({ collapsed, onOpenMessageCenter, onOpenSettings, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, machineCode, onCopyMachineCode, onOpenMessageCenter, onOpenSettings, onToggle }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -80,6 +83,20 @@ export function Sidebar({ collapsed, onOpenMessageCenter, onOpenSettings, onTogg
       </nav>
 
       <div className="quick-actions">
+        {machineCode ? (
+          <div className="machine-code-card" title={machineCode}>
+            <i>码</i>
+            {collapsed ? null : (
+              <div>
+                <b>机器码</b>
+                <span>{machineCode}</span>
+              </div>
+            )}
+            <button aria-label="复制机器码" onClick={onCopyMachineCode} type="button">
+              <Copy size={14} />
+            </button>
+          </div>
+        ) : null}
         <button className="quick-card" onClick={onOpenMessageCenter} type="button" aria-label="打开消息中心">
           <i>讯</i>
           <div>

@@ -6,7 +6,17 @@ export type ThemeMode = "dark" | "light";
 export type StockLinkClient = "tdx" | "ths";
 export type InviteAccessMode = "trial" | "invite";
 
+export type AccessActivation = {
+  accessId: string;
+  accessMode: InviteAccessMode;
+  activatedAt: string;
+  activationSecret: string;
+  machineCode: string;
+  machineCodeVersion: string;
+};
+
 export type AppPreferences = {
+  accessActivation: AccessActivation | null;
   apiBaseUrl: string;
   inviteAccessMode: InviteAccessMode | null;
   inviteAcknowledged: boolean;
@@ -18,6 +28,8 @@ export type AppPreferences = {
   thsPath: string;
   theme: ThemeMode;
   acknowledgeInviteAccess: (value: { code?: string; mode: InviteAccessMode }) => void;
+  clearAccessActivation: () => void;
+  saveAccessActivation: (value: AccessActivation) => void;
   setApiBaseUrl: (value: string) => void;
   setMotionEnabled: (value: boolean) => void;
   setSidebarCollapsed: (value: boolean) => void;
@@ -29,6 +41,7 @@ export const usePreferencesStore = create<AppPreferences>()(
   persist(
     (set) => ({
       apiBaseUrl: normalizeApiBaseUrl(),
+      accessActivation: null,
       inviteAccessMode: null,
       inviteAcknowledged: false,
       inviteCode: "",
@@ -43,6 +56,20 @@ export const usePreferencesStore = create<AppPreferences>()(
           inviteAccessMode: value.mode,
           inviteAcknowledged: true,
           inviteCode: value.mode === "invite" ? value.code?.trim() ?? "" : ""
+        }),
+      clearAccessActivation: () =>
+        set({
+          accessActivation: null,
+          inviteAccessMode: null,
+          inviteAcknowledged: false,
+          inviteCode: ""
+        }),
+      saveAccessActivation: (value) =>
+        set({
+          accessActivation: value,
+          inviteAccessMode: value.accessMode,
+          inviteAcknowledged: true,
+          inviteCode: ""
         }),
       setApiBaseUrl: (value) => set({ apiBaseUrl: normalizeApiBaseUrl(value) }),
       setMotionEnabled: (value) => set({ motionEnabled: value }),
@@ -59,6 +86,7 @@ export const usePreferencesStore = create<AppPreferences>()(
       name: "niuniu-electron-preferences",
       partialize: (state) => ({
         apiBaseUrl: state.apiBaseUrl,
+        accessActivation: state.accessActivation,
         inviteAccessMode: state.inviteAccessMode,
         inviteAcknowledged: state.inviteAcknowledged,
         inviteCode: state.inviteCode,

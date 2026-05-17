@@ -1300,6 +1300,63 @@ a {
   transition: transform .18s ease, border-color .18s ease, background .18s ease;
 }
 
+.machine-code-card {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 28px;
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background:
+    linear-gradient(135deg, var(--green-soft), transparent 58%),
+    var(--surface-1);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);
+}
+
+.machine-code-card i {
+  width: 30px;
+  height: 30px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(32, 212, 244, .12);
+  color: var(--cyan);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.machine-code-card b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+}
+
+.machine-code-card span {
+  display: block;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 10px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.machine-code-card button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .05);
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
 .quick-card:hover {
   transform: translateY(-1px);
   border-color: var(--line-strong);
@@ -1354,6 +1411,22 @@ a {
   justify-items: center;
   padding: 0;
   border-radius: 14px;
+}
+
+.sidebar-collapsed .machine-code-card {
+  width: 42px;
+  height: 42px;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 0;
+  border-radius: 14px;
+}
+
+.sidebar-collapsed .machine-code-card div,
+.sidebar-collapsed .machine-code-card button {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sidebar-collapsed .quick-card div {
@@ -3628,6 +3701,37 @@ a {
   border-radius: 16px;
   background: rgba(255, 255, 255, .04);
   padding: 11px 12px;
+}
+
+.invite-machine-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 34px;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .035);
+  padding: 9px 10px;
+}
+
+.invite-machine-row span {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.invite-machine-row code {
+  overflow: hidden;
+  color: var(--cyan);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invite-status-text {
+  margin-right: auto;
+  color: var(--red);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .invite-code-field input {

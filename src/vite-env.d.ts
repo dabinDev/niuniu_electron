@@ -6,6 +6,7 @@ interface Window {
     copyImageDataUrl?: (dataUrl: string) => Promise<{ message: string; success: boolean }>;
     copyText?: (text: string) => Promise<{ message: string; success: boolean }>;
     getWindowState?: () => Promise<{ isFullScreen: boolean; isMaximized: boolean }>;
+    getMachineCode?: () => Promise<{ machineCode: string; version: string }>;
     onWindowStateChange?: (listener: (state: { isFullScreen: boolean; isMaximized: boolean }) => void) => () => void;
     openExternal?: (url: string) => Promise<{ message: string; success: boolean }>;
     openStock?: (options: {

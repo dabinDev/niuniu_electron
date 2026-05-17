@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("niuniu", {
   saveFile: (options: unknown) => ipcRenderer.invoke("niuniu:save-file", options),
   windowControl: (action: string) => ipcRenderer.invoke("niuniu:window-control", action),
   getWindowState: () => ipcRenderer.invoke("niuniu:window-state"),
+  getMachineCode: () => ipcRenderer.invoke("niuniu:machine-code"),
   onWindowStateChange: (listener: (state: unknown) => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, state: unknown) => listener(state);
     ipcRenderer.on("niuniu:window-state-changed", wrapped);

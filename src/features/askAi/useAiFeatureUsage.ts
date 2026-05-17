@@ -7,8 +7,8 @@ export function useAiFeatureUsage(feature: AiFeatureKey) {
   const client = useApiClient();
   const clientId = useMemo(() => loadOrCreateAskAiClientId(), []);
   const query = useQuery({
-    queryFn: () => client.getMap(`/api/v1/ask-ai/usage-status?client_id=${encodeURIComponent(clientId)}`),
-    queryKey: ["ask-ai", "usage-status", clientId]
+    queryFn: () => client.getMap("/api/v1/ask-ai/usage-status"),
+    queryKey: ["ask-ai", "usage-status"]
   });
 
   return {

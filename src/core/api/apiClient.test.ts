@@ -24,4 +24,37 @@ describe("ApiClient", () => {
       expect.objectContaining({ method: "GET" })
     );
   });
+
+  it("adds signed access headers to api requests when activation is available", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const client = new ApiClient({
+      accessProvider: () => ({
+        accessId: "invite_123",
+        accessMode: "invite",
+        activatedAt: "2026-05-17T02:00:00+00:00",
+        activationSecret: "secret",
+        machineCode: "NN-MACHINE",
+        machineCodeVersion: "win-v1"
+      }),
+      baseUrl: "http://127.0.0.1:18081",
+      fetcher: fetchMock,
+      nonceFactory: () => "nonce-1",
+      timestampFactory: () => "2026-05-17T02:00:00+00:00"
+    });
+
+    await client.postMap("/api/v1/ask-ai/generate", { source: "ask_ai" });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:18081/api/v1/ask-ai/generate",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-NN-Access-Id": "invite_123",
+          "X-NN-Machine-Code": "NN-MACHINE",
+          "X-NN-Nonce": "nonce-1",
+          "X-NN-Signature": expect.stringMatching(/^[a-f0-9]{64}$/)
+        }),
+        method: "POST"
+      })
+    );
+  });
 });

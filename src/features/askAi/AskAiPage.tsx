@@ -54,8 +54,8 @@ export function AskAiPage() {
     queryKey: queryKeys.askAiHistory
   });
   const serverUsage = useQuery({
-    queryFn: () => client.getMap(`/api/v1/ask-ai/usage-status?client_id=${encodeURIComponent(clientId)}`),
-    queryKey: ["ask-ai", "usage-status", clientId]
+    queryFn: () => client.getMap("/api/v1/ask-ai/usage-status"),
+    queryKey: ["ask-ai", "usage-status"]
   });
   const usageDate = getString(context.data ?? {}, "trade_date", "") || undefined;
 

@@ -1,9 +1,12 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import { Bell, Minus, PanelLeftClose, PanelLeftOpen, Settings, Square, X } from "lucide-react";
+import { Bell, Copy, Minus, PanelLeftClose, PanelLeftOpen, Settings, Square, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { navigationItems } from "../../app/navigation";
-import { usePreferencesStore } from "../../app/preferencesStore";
-import { controlWindow, getWindowState, onWindowStateChange, supportsWindowStateBridge, type WindowControlAction, type WindowState } from "../../core/desktop/desktopBridge";
+import { type AccessActivation, usePreferencesStore } from "../../app/preferencesStore";
+import { activateAccess } from "../../core/access/accessActivation";
+import { getMachineCodeInfo, type MachineCodeInfo } from "../../core/access/machineCode";
+import { controlWindow, copyText, getWindowState, onWindowStateChange, supportsWindowStateBridge, type WindowControlAction, type WindowState } from "../../core/desktop/desktopBridge";
+import { errorMessage } from "../../core/format/error";
 import { Sidebar } from "./Sidebar";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -12,12 +15,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const motionEnabled = usePreferencesStore((state) => state.motionEnabled);
   const sidebarCollapsed = usePreferencesStore((state) => state.sidebarCollapsed);
   const inviteAcknowledged = usePreferencesStore((state) => state.inviteAcknowledged);
-  const acknowledgeInviteAccess = usePreferencesStore((state) => state.acknowledgeInviteAccess);
+  const accessActivation = usePreferencesStore((state) => state.accessActivation);
+  const apiBaseUrl = usePreferencesStore((state) => state.apiBaseUrl);
+  const saveAccessActivation = usePreferencesStore((state) => state.saveAccessActivation);
   const setTheme = usePreferencesStore((state) => state.setTheme);
   const setMotionEnabled = usePreferencesStore((state) => state.setMotionEnabled);
   const setSidebarCollapsed = usePreferencesStore((state) => state.setSidebarCollapsed);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [messageCenterOpen, setMessageCenterOpen] = useState(false);
+  const [machineInfo, setMachineInfo] = useState<MachineCodeInfo | null>(null);
   const [windowState, setWindowState] = useState<WindowState>({ isFullScreen: false, isMaximized: false });
 
   const className = useMemo(
@@ -63,6 +69,22 @@ export function AppShell({ children }: { children: ReactNode }) {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (accessActivation?.machineCode) {
+      setMachineInfo({ machineCode: accessActivation.machineCode, version: accessActivation.machineCodeVersion });
+      return undefined;
+    }
+    let mounted = true;
+    void getMachineCodeInfo().then((info) => {
+      if (mounted) {
+        setMachineInfo(info);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [accessActivation?.machineCode, accessActivation?.machineCodeVersion]);
 
   return (
     <div className={className} data-theme={theme}>
@@ -110,6 +132,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="app-layout">
           <Sidebar
             collapsed={sidebarCollapsed}
+            machineCode={machineInfo?.machineCode ?? accessActivation?.machineCode}
+            onCopyMachineCode={() => {
+              const value = machineInfo?.machineCode ?? accessActivation?.machineCode ?? "";
+              if (value) {
+                void copyText(value);
+              }
+            }}
             onOpenMessageCenter={() => setMessageCenterOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
             onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -120,7 +149,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {settingsOpen ? <SettingsPanel onClose={() => setSettingsOpen(false)} /> : null}
       {messageCenterOpen ? <MessageCenterPanel onClose={() => setMessageCenterOpen(false)} /> : null}
-      {!inviteAcknowledged ? <InvitationNoticeDialog onAcknowledge={acknowledgeInviteAccess} /> : null}
+      {!inviteAcknowledged ? (
+        <InvitationNoticeDialog
+          apiBaseUrl={apiBaseUrl}
+          machineInfo={machineInfo}
+          onActivated={saveAccessActivation}
+        />
+      ) : null}
     </div>
   );
 }
@@ -206,9 +241,43 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function InvitationNoticeDialog({ onAcknowledge }: { onAcknowledge: (value: { code?: string; mode: "trial" | "invite" }) => void }) {
+function InvitationNoticeDialog({
+  apiBaseUrl,
+  machineInfo,
+  onActivated
+}: {
+  apiBaseUrl: string;
+  machineInfo: MachineCodeInfo | null;
+  onActivated: (value: AccessActivation) => void;
+}) {
   const [inviteCode, setInviteCode] = useState("");
+  const [statusText, setStatusText] = useState("");
+  const [activating, setActivating] = useState(false);
   const trimmedInviteCode = inviteCode.trim();
+  const machineCode = machineInfo?.machineCode ?? "";
+
+  async function runActivation(mode: "trial" | "invite") {
+    const code = mode === "trial" ? "TRIAL" : trimmedInviteCode;
+    if (!machineInfo || !code) {
+      setStatusText("正在读取机器码，请稍候再试。");
+      return;
+    }
+    setActivating(true);
+    setStatusText("");
+    try {
+      const activation = await activateAccess({
+        accessCode: code,
+        apiBaseUrl,
+        machine: machineInfo,
+        mode
+      });
+      onActivated(activation);
+    } catch (error) {
+      setStatusText(errorMessage(error));
+    } finally {
+      setActivating(false);
+    }
+  }
 
   return (
     <div className="modal-backdrop invite-notice-backdrop" role="presentation">
@@ -245,8 +314,16 @@ function InvitationNoticeDialog({ onAcknowledge }: { onAcknowledge: (value: { co
 
         <div className="invite-trial-row">
           <span>没有邀请码也可以先进入试用模式，后续用户体系上线后部分能力可能需要重新验证。</span>
-          <button className="ghost-button" onClick={() => onAcknowledge({ mode: "trial" })} type="button">
-            试用体验
+          <button className="ghost-button" disabled={activating || !machineInfo} onClick={() => void runActivation("trial")} type="button">
+            {activating ? "验证中" : "试用体验"}
+          </button>
+        </div>
+
+        <div className="invite-machine-row">
+          <span>机器码</span>
+          <code>{machineCode || "读取中..."}</code>
+          <button aria-label="复制机器码" className="icon-button" disabled={!machineCode} onClick={() => void copyText(machineCode)} type="button">
+            <Copy size={14} />
           </button>
         </div>
 
@@ -261,8 +338,9 @@ function InvitationNoticeDialog({ onAcknowledge }: { onAcknowledge: (value: { co
         </label>
 
         <footer className="settings-actions">
-          <button className="primary-button invite-primary-button" disabled={!trimmedInviteCode} onClick={() => onAcknowledge({ code: trimmedInviteCode, mode: "invite" })} type="button">
-            验证并进入
+          {statusText ? <span className="invite-status-text">{statusText}</span> : null}
+          <button className="primary-button invite-primary-button" disabled={activating || !trimmedInviteCode || !machineInfo} onClick={() => void runActivation("invite")} type="button">
+            {activating ? "验证中" : "验证并进入"}
           </button>
         </footer>
       </section>

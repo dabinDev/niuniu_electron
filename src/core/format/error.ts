@@ -9,6 +9,15 @@ export function errorMessage(error: unknown): string {
 
 function parseApiErrorMessage(error: ApiError): string | undefined {
   const payload = parseJsonObject(error.responseBody || error.message);
+  const directMessage = typeof payload?.message === "string" ? payload.message : undefined;
+  if (directMessage) {
+    return directMessage;
+  }
+  const detailRecord = isRecord(payload?.detail) ? payload.detail : undefined;
+  const detailMessage = typeof detailRecord?.message === "string" ? detailRecord.message : undefined;
+  if (detailMessage) {
+    return detailMessage;
+  }
   const details = Array.isArray(payload?.detail) ? payload.detail : undefined;
   if (!details || details.length === 0) {
     return undefined;

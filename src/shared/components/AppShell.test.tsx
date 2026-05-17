@@ -7,7 +7,23 @@ import { AppShell } from "./AppShell";
 
 describe("AppShell", () => {
   beforeEach(() => {
+    vi.unstubAllGlobals();
+    Object.defineProperty(window, "niuniu", {
+      configurable: true,
+      value: {
+        appName: "NiuNiu",
+        getMachineCode: async () => ({ machineCode: "NN-EXISTING", version: "win-v1" })
+      }
+    });
     usePreferencesStore.setState({
+      accessActivation: {
+        accessId: "trial_existing",
+        accessMode: "trial",
+        activatedAt: "2026-05-17T02:00:00Z",
+        activationSecret: "secret",
+        machineCode: "NN-EXISTING",
+        machineCodeVersion: "win-v1"
+      },
       inviteAccessMode: "trial",
       inviteAcknowledged: true,
       inviteCode: "",
@@ -255,7 +271,9 @@ describe("AppShell", () => {
   });
 
   it("lets a first-time user enter trial mode and stores that acknowledgement", async () => {
+    mockActivationEnvironment("trial_access", "trial");
     usePreferencesStore.setState({
+      accessActivation: null,
       inviteAccessMode: null,
       inviteAcknowledged: false,
       inviteCode: ""
@@ -274,10 +292,13 @@ describe("AppShell", () => {
     expect(screen.queryByRole("dialog", { name: "牛牛开盘使用声明与邀请验证" })).not.toBeInTheDocument();
     expect(usePreferencesStore.getState().inviteAcknowledged).toBe(true);
     expect(usePreferencesStore.getState().inviteAccessMode).toBe("trial");
+    expect(usePreferencesStore.getState().accessActivation?.accessId).toBe("trial_access");
   });
 
   it("accepts a non-empty invitation code and stores invited access", async () => {
+    const fetchMock = mockActivationEnvironment("invite_access", "invite");
     usePreferencesStore.setState({
+      accessActivation: null,
       inviteAccessMode: null,
       inviteAcknowledged: false,
       inviteCode: ""
@@ -298,11 +319,70 @@ describe("AppShell", () => {
     expect(screen.queryByRole("dialog", { name: "牛牛开盘使用声明与邀请验证" })).not.toBeInTheDocument();
     expect(usePreferencesStore.getState().inviteAcknowledged).toBe(true);
     expect(usePreferencesStore.getState().inviteAccessMode).toBe("invite");
-    expect(usePreferencesStore.getState().inviteCode).toBe("alpha-2026");
+    expect(usePreferencesStore.getState().inviteCode).toBe("");
+    expect(usePreferencesStore.getState().accessActivation?.accessId).toBe("invite_access");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:18081/api/v1/access/activate",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
+  it("renders the machine code in the sidebar and copies it", async () => {
+    const copyText = vi.fn(async () => ({ message: "ok", success: true }));
+    usePreferencesStore.setState({
+      accessActivation: null,
+      inviteAcknowledged: true,
+      inviteAccessMode: "trial"
+    });
+    Object.defineProperty(window, "niuniu", {
+      configurable: true,
+      value: {
+        appName: "NiuNiu",
+        copyText,
+        getMachineCode: async () => ({ machineCode: "NN-SIDEBAR-MACHINE", version: "win-v1" })
+      }
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/overview"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText("NN-SIDEBAR-MACHINE")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "复制机器码" }));
+    expect(copyText).toHaveBeenCalledWith("NN-SIDEBAR-MACHINE");
   });
 });
 
 function LocationEcho() {
   const location = useLocation();
   return <div data-testid="location">{location.pathname}</div>;
+}
+
+function mockActivationEnvironment(accessId: string, accessType: "trial" | "invite") {
+  Object.defineProperty(window, "niuniu", {
+    configurable: true,
+    value: {
+      appName: "NiuNiu",
+      getMachineCode: async () => ({ machineCode: "NN-TEST-MACHINE", version: "win-v1" })
+    }
+  });
+  const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+    access_id: accessId,
+    access_type: accessType,
+    activated_at: "2026-05-17T02:00:00Z",
+    activation_secret: "activation-secret",
+    machine_code: "NN-TEST-MACHINE",
+    machine_code_version: "win-v1",
+    quotas: {
+      ask_ai: { limit: accessType === "trial" ? 2 : 5, remaining: accessType === "trial" ? 2 : 5, used: 0 },
+      auction: { limit: accessType === "trial" ? 2 : 5, remaining: accessType === "trial" ? 2 : 5, used: 0 },
+      limit_review: { limit: accessType === "trial" ? 2 : 5, remaining: accessType === "trial" ? 2 : 5, used: 0 }
+    }
+  }), { status: 200 }));
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
 }

@@ -1,7 +1,9 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, nativeTheme, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, shell } from "electron";
+import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -132,6 +134,17 @@ ipcMain.handle("niuniu:window-state", async (event) => {
   return windowState(win);
 });
 
+ipcMain.handle("niuniu:machine-code", async () => {
+  const raw = [
+    await readWindowsMachineGuid(),
+    os.hostname(),
+    os.userInfo().username,
+    app.getPath("userData")
+  ].filter(Boolean).join("|");
+  const digest = createHash("sha256").update(raw || app.getPath("userData")).digest("hex").slice(0, 24).toUpperCase();
+  return { machineCode: `NN-${digest}`, version: "win-v1" };
+});
+
 ipcMain.handle(
   "niuniu:open-stock",
   async (
@@ -176,3 +189,26 @@ app.on("window-all-closed", () => {
     app.quit();
   }
 });
+
+async function readWindowsMachineGuid(): Promise<string> {
+  if (process.platform !== "win32") {
+    return "";
+  }
+  try {
+    const output = await new Promise<string>((resolve) => {
+      const child = spawn("reg", ["query", "HKLM\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid"], {
+        windowsHide: true
+      });
+      let text = "";
+      child.stdout.on("data", (chunk) => {
+        text += String(chunk);
+      });
+      child.on("error", () => resolve(""));
+      child.on("close", () => resolve(text));
+    });
+    const match = output.match(/MachineGuid\s+REG_\w+\s+([^\r\n]+)/i);
+    return match?.[1]?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
