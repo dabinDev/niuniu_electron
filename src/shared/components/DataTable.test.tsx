@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { DataTable } from "./DataTable";
 
 describe("DataTable", () => {
@@ -171,5 +171,26 @@ describe("DataTable", () => {
     );
 
     expect(dense.container.querySelector(".data-table")).toHaveClass("rows-12", "density-dense");
+  });
+
+  it("keeps single-click and double-click row actions separate", () => {
+    const onClick = vi.fn();
+    const onDoubleClick = vi.fn();
+    render(
+      <DataTable
+        columns={[{ key: "name", label: "名称" }]}
+        rows={[{ id: "1", onClick, onDoubleClick, values: { name: "浦发A" } }]}
+      />
+    );
+
+    const row = screen.getByText("浦发A").closest("button");
+    expect(row).toBeInstanceOf(HTMLButtonElement);
+
+    fireEvent.click(row as HTMLButtonElement);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onDoubleClick).not.toHaveBeenCalled();
+
+    fireEvent.dblClick(row as HTMLButtonElement);
+    expect(onDoubleClick).toHaveBeenCalledTimes(1);
   });
 });

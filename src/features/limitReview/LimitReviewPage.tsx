@@ -204,7 +204,7 @@ export function LimitReviewPage() {
             </article>
             <div>
               {getRecords(activeHeightColumn ?? {}, "stocks").slice(0, 8).map((stock) => (
-                <button className={boardToneClass(Number(stock.board_count ?? 0))} key={`${getString(stock, "code")}-${getString(stock, "name")}`} onClick={() => setSelectedStock(getString(stock, "code", ""))} type="button">
+                <button className={boardToneClass(Number(stock.board_count ?? 0))} key={`${getString(stock, "code")}-${getString(stock, "name")}`} onDoubleClick={() => setSelectedStock(getString(stock, "code", ""))} type="button">
                   <b>{getString(stock, "name")}</b>
                   <span>{getString(stock, "code")}</span>
                 </button>
@@ -255,7 +255,7 @@ function buildReviewGroupView(group: Record<string, unknown>, onStockSelect: (co
     const stockCode = getString(item, "stock_code", getString(item, "code", cells[originalKeys.indexOf("stock_code")] ?? cells[originalKeys.indexOf("code")] ?? ""));
     return {
       id: `${stockCode || displayName}-${index}`,
-      onClick: stockCode ? () => onStockSelect(stockCode) : undefined,
+      onDoubleClick: stockCode ? () => onStockSelect(stockCode) : undefined,
       values: Object.fromEntries(columns.map((column) => {
         const cellIndex = originalKeys.indexOf(column.key);
         const value = item[column.key] ?? (cellIndex >= 0 ? cells[cellIndex] : undefined) ?? "--";

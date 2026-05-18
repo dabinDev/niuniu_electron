@@ -169,7 +169,7 @@ export function PlateRotationPage() {
           {stockTable.rows.length === 0 ? (
             <EmptyState action="点击左侧板块" description="选中轮动矩阵或板块序列中的有效板块后，这里会加载板块内股票。" title="等待选择板块" tone="market" />
           ) : (
-            <DataTable columns={stockTable.columns} rows={stockTable.rows.map((row) => ({ ...row, onClick: () => setSelectedStock(String(row.values.stock_code ?? row.values.code ?? "")) }))} />
+            <DataTable columns={stockTable.columns} rows={stockTable.rows.map((row) => ({ ...row, onDoubleClick: () => setSelectedStock(String(row.values.stock_code ?? row.values.code ?? "")) }))} />
           )}
         </GlassCard>
       </section>

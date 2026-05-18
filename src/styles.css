@@ -4479,11 +4479,11 @@ a {
 .auction-stock-list article {
   position: relative;
   border: 1px solid var(--line);
-  border-radius: 15px;
+  border-radius: 12px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .024)),
     var(--surface-1);
-  padding: 10px;
+  padding: 10px 10px 9px;
   overflow: hidden;
   cursor: pointer;
   transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
@@ -4505,7 +4505,7 @@ a {
   background: linear-gradient(180deg, var(--green), var(--cyan));
 }
 
-.auction-stock-list article.tone-down span {
+.auction-stock-list article.tone-down .auction-stock-change {
   color: var(--green-strong);
 }
 
@@ -4530,18 +4530,45 @@ a {
   box-shadow: 0 14px 30px rgba(255, 77, 85, .12), inset 0 1px 0 rgba(255, 255, 255, .16);
 }
 
-.auction-stock-list b {
+.auction-stock-list article.same-stock {
+  border-color: rgba(245, 158, 11, .52);
+  box-shadow: 0 14px 30px rgba(245, 158, 11, .11), inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+
+.auction-same-stock-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 18px;
+  padding: 0 7px;
+  border: 1px solid rgba(245, 158, 11, .42);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, .26), rgba(255, 77, 85, .14)),
+    rgba(20, 24, 34, .78);
+  color: var(--amber-strong);
+  font-size: 10px;
+  font-weight: 880;
+  line-height: 1;
+  box-shadow: 0 8px 16px rgba(245, 158, 11, .12);
+}
+
+.auction-stock-list article > b {
   display: block;
   color: var(--text);
   font-size: 13px;
   font-weight: 850;
-  padding-left: 4px;
+  padding: 0 38px 0 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.auction-stock-list span {
+.auction-stock-change {
   display: block;
   margin-top: 6px;
   color: var(--red-strong);
@@ -4561,6 +4588,65 @@ a {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.auction-amount-timeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 7px 0 2px;
+  padding-left: 4px;
+}
+
+.auction-amount-point {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 3px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .025)),
+    rgba(255, 255, 255, .03);
+}
+
+.auction-amount-point.trend-up {
+  border-color: rgba(255, 77, 85, .26);
+  background:
+    linear-gradient(180deg, rgba(255, 77, 85, .14), rgba(245, 158, 11, .045)),
+    rgba(255, 255, 255, .03);
+}
+
+.auction-amount-point.trend-down {
+  border-color: rgba(24, 195, 126, .24);
+  background:
+    linear-gradient(180deg, rgba(24, 195, 126, .13), rgba(34, 211, 238, .045)),
+    rgba(255, 255, 255, .03);
+}
+
+.auction-amount-point.trend-neutral {
+  border-color: rgba(96, 165, 250, .2);
+}
+
+.auction-amount-timeline em {
+  color: var(--text-faint);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 760;
+  line-height: 1;
+}
+
+.auction-amount-timeline b {
+  padding: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 860;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
 .auction-rank-workbench {
@@ -9326,7 +9412,7 @@ body,
 
 .auction-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
 }
 
@@ -9334,6 +9420,29 @@ body,
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   min-height: clamp(360px, 46vh, 560px);
+}
+
+.auction-columns .auction-stock-list {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+
+@media (min-width: 1500px) {
+  .auction-columns {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1840px) {
+  .auction-columns {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1040px) {
+  .auction-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .auction-stock-list {

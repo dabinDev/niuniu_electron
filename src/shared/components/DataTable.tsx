@@ -15,6 +15,7 @@ export type DataRow = {
   id: string;
   values: Record<string, ReactNode>;
   onClick?: () => void;
+  onDoubleClick?: () => void;
 };
 
 export function DataTable({ columns, rows }: { columns: DataColumn[]; rows: DataRow[] }) {
@@ -42,7 +43,7 @@ export function DataTable({ columns, rows }: { columns: DataColumn[]; rows: Data
       </div>
       <div className="data-table-body">
         {rows.map((row) => (
-          <button className={clsx("data-row", rowToneClass(displayColumns, row.values))} key={row.id} onClick={row.onClick} type="button">
+          <button className={clsx("data-row", rowToneClass(displayColumns, row.values))} key={row.id} onClick={row.onClick} onDoubleClick={row.onDoubleClick} type="button">
             {displayColumns.map((column) => {
               const value = row.values[column.key] ?? "--";
               return renderCell(column, row.values, value);

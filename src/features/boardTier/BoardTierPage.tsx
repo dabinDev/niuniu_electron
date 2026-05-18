@@ -176,7 +176,7 @@ function TierTreeCard({ onSelectStock, side, tier }: { onSelectStock: (symbol: s
       </div>
       <div className="tier-tree-stock-list">
         {stocks.map((stock) => (
-          <button key={`${getString(tier, "title")}-${getString(stock, "code")}`} onClick={() => onSelectStock(getString(stock, "code"))} type="button">
+          <button key={`${getString(tier, "title")}-${getString(stock, "code")}`} onDoubleClick={() => onSelectStock(getString(stock, "code"))} type="button">
             <b>{getString(stock, "name", "--")}</b>
             <span>{getString(stock, "code", "--")} · {marketStatusLabel(getString(stock, "status", "--"))} · {getString(stock, "change_pct", "--")}</span>
             <small>{getString(stock, "first_limit_time", "--")} · {getString(stock, "amount", "--")} · {getString(stock, "reason", "--")}</small>

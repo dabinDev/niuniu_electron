@@ -13,6 +13,17 @@ const context = {
   trade_date: "2026-05-14"
 };
 
+const auctionCompareContext = {
+  ...context,
+  prompt_sections: [
+    {
+      content: "重点竞价个股：\n- 威龙股份 (603779)，竞价对比 9:15 122.3亿 | 9:20 27.3亿 | 9:25 27.4亿 | 涨幅 9.98%",
+      key: "auction",
+      title: "竞价焦点"
+    }
+  ]
+};
+
 describe("AskAiPage", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -57,6 +68,22 @@ describe("AskAiPage", () => {
 
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("# 系统提示"));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("# 用户问题"));
+  });
+
+  it("shows the four-point auction comparison in the ask-ai prompt preview", async () => {
+    localStorage.setItem("niuniu-ask-ai-client-id", "electron-test");
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const requestUrl = String(url);
+      if (requestUrl.includes("/api/v1/ask-ai/context")) return jsonResponse(auctionCompareContext);
+      if (requestUrl.includes("/api/v1/ask-ai/history")) return jsonResponse({ items: [] });
+      if (requestUrl.includes("/api/v1/ask-ai/usage-status")) return jsonResponse({ client_id: "electron-test", features: {}, has_own_key: false });
+      return jsonResponse({});
+    });
+
+    renderWithClient(fetchMock);
+
+    expect(await screen.findByText("竞价焦点")).toBeInTheDocument();
+    expect(screen.getByTestId("ask-ai-prompt-preview")).toHaveTextContent("竞价对比 9:15 122.3亿 | 9:20 27.3亿 | 9:25 27.4亿 | 涨幅 9.98%");
   });
 
   it("saves personal Kimi settings, sends secret-free client_config, and records local usage", async () => {

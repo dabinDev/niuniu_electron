@@ -102,7 +102,7 @@ export class ApiClient {
 
   private requiresAccess(path: string): boolean {
     const pathname = this.pathWithQuery(path).split("?", 1)[0];
-    return pathname.startsWith("/api/v1/") && pathname !== "/api/v1/access/activate";
+    return pathname.startsWith("/api/v1/") && !["/api/v1/access/activate", "/api/v1/access/trial/apply"].includes(pathname);
   }
 
   private pathWithQuery(path: string): string {

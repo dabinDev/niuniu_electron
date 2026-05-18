@@ -104,7 +104,7 @@ export function BoardHeightPage() {
             <div className="height-preview-chips">
               {activePreview.length === 0 ? <span className="muted-chip">暂无成员</span> : null}
               {activePreview.map((stock) => (
-                <button className={boardToneClass(Number(stock.board_count ?? 0), maxBoardCount)} key={`${getString(stock, "code")}-${getString(stock, "name")}`} onClick={() => setSelectedStock(getString(stock, "code", ""))} type="button">
+                <button className={boardToneClass(Number(stock.board_count ?? 0), maxBoardCount)} key={`${getString(stock, "code")}-${getString(stock, "name")}`} onDoubleClick={() => setSelectedStock(getString(stock, "code", ""))} type="button">
                   <b>{getString(stock, "name")}</b>
                   <span>{getString(stock, "code")}</span>
                 </button>
@@ -143,8 +143,8 @@ export function BoardHeightPage() {
                         key={`${getString(column, "date")}-${rowIndex}-${getString(stock, "code")}`}
                         onClick={() => {
                           setSelectedDate(getString(column, "date"));
-                          setSelectedStock(getString(stock, "code", ""));
                         }}
+                        onDoubleClick={() => setSelectedStock(getString(stock, "code", ""))}
                         type="button"
                       >
                         <b>{getString(stock, "name")}</b>
@@ -175,7 +175,7 @@ export function BoardHeightPage() {
               {table.rows.length === 0 ? (
                 <EmptyState description="该日没有高标股票记录。" title="暂无高标" tone="muted" />
               ) : (
-                <DataTable columns={table.columns} rows={table.rows.map((row) => ({ ...row, onClick: () => setSelectedStock(String(row.values.code ?? "")) }))} />
+                <DataTable columns={table.columns} rows={table.rows.map((row) => ({ ...row, onDoubleClick: () => setSelectedStock(String(row.values.code ?? "")) }))} />
               )}
               </div>
             </GlassCard>

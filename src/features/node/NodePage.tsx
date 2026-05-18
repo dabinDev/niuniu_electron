@@ -143,7 +143,7 @@ export function NodePage() {
           ) : leaderTable.rows.length === 0 ? (
             <EmptyState action={leaderEmptyState.action} description={leaderEmptyState.description} title={leaderEmptyState.title} tone="market" />
           ) : (
-            <DataTable columns={leaderTable.columns} rows={leaderTable.rows.map((row) => ({ ...row, onClick: () => setSelectedStock(String(row.values.stock_code ?? "")) }))} />
+            <DataTable columns={leaderTable.columns} rows={leaderTable.rows.map((row) => ({ ...row, onDoubleClick: () => setSelectedStock(String(row.values.stock_code ?? "")) }))} />
           )}
           </div>
         </GlassCard>

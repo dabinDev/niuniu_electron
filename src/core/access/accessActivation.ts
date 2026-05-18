@@ -19,6 +19,18 @@ export async function activateAccess(options: {
   return normalizeActivation(response, options.mode);
 }
 
+export async function applyTrialAccess(options: {
+  apiBaseUrl: string;
+  machine: MachineCodeInfo;
+}): Promise<AccessActivation> {
+  const client = new ApiClient({ baseUrl: options.apiBaseUrl });
+  const response = await client.postMap("/api/v1/access/trial/apply", {
+    machine_code: options.machine.machineCode,
+    machine_code_version: options.machine.version
+  });
+  return normalizeActivation(response, "trial");
+}
+
 function normalizeActivation(value: Record<string, unknown>, fallbackMode: InviteAccessMode): AccessActivation {
   return {
     accessId: stringValue(value.access_id),

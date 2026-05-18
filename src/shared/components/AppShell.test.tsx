@@ -270,8 +270,8 @@ describe("AppShell", () => {
     expect(screen.getByText("AI 内容由模型基于数据综合生成，可能存在遗漏、偏差或误读，作者不对 AI 输出及其使用结果负责。")).toBeInTheDocument();
   });
 
-  it("lets a first-time user enter trial mode and stores that acknowledgement", async () => {
-    mockActivationEnvironment("trial_access", "trial");
+  it("lets a first-time user request automatic trial access and stores that acknowledgement", async () => {
+    const fetchMock = mockActivationEnvironment("trial_access", "trial");
     usePreferencesStore.setState({
       accessActivation: null,
       inviteAccessMode: null,
@@ -293,6 +293,13 @@ describe("AppShell", () => {
     expect(usePreferencesStore.getState().inviteAcknowledged).toBe(true);
     expect(usePreferencesStore.getState().inviteAccessMode).toBe("trial");
     expect(usePreferencesStore.getState().accessActivation?.accessId).toBe("trial_access");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:18081/api/v1/access/trial/apply",
+      expect.objectContaining({
+        body: expect.stringContaining('"machine_code":"NN-TEST-MACHINE"'),
+        method: "POST"
+      })
+    );
   });
 
   it("accepts a non-empty invitation code and stores invited access", async () => {
@@ -327,8 +334,8 @@ describe("AppShell", () => {
     );
   });
 
-  it("accepts a non-empty trial code and activates it as trial access", async () => {
-    const fetchMock = mockActivationEnvironment("trial_code_access", "trial");
+  it("does not render a manual trial code input because trial access is automatic", async () => {
+    mockActivationEnvironment("trial_code_access", "trial");
     usePreferencesStore.setState({
       accessActivation: null,
       inviteAccessMode: null,
@@ -344,26 +351,9 @@ describe("AppShell", () => {
       </MemoryRouter>
     );
 
-    const input = await screen.findByLabelText("体验码");
-    await userEvent.type(input, "  TRIAL-CODE-001  ");
-    await userEvent.click(screen.getByRole("button", { name: "验证体验码" }));
-
-    expect(screen.queryByRole("dialog", { name: "牛牛开盘使用声明与邀请验证" })).not.toBeInTheDocument();
-    expect(usePreferencesStore.getState().inviteAcknowledged).toBe(true);
-    expect(usePreferencesStore.getState().inviteAccessMode).toBe("trial");
-    expect(usePreferencesStore.getState().accessActivation?.accessId).toBe("trial_code_access");
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:18081/api/v1/access/activate",
-      expect.objectContaining({
-        body: expect.stringContaining('"access_code":"TRIAL-CODE-001"')
-      })
-    );
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:18081/api/v1/access/activate",
-      expect.objectContaining({
-        body: expect.stringContaining('"access_type":"trial"')
-      })
-    );
+    expect(await screen.findByRole("dialog", { name: "牛牛开盘使用声明与邀请验证" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("体验码")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "验证体验码" })).not.toBeInTheDocument();
   });
 
   it("renders the machine code in the sidebar and copies it", async () => {
@@ -516,7 +506,12 @@ function mockActivationEnvironment(accessId: string, accessType: "trial" | "invi
       getMachineCode: async () => ({ machineCode: "NN-TEST-MACHINE", version: "win-v1" })
     }
   });
-  const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+  const fetchMock = vi.fn(async (url: string | URL | Request) => {
+    const requestUrl = String(url);
+    if (!requestUrl.includes("/api/v1/access/trial/apply") && !requestUrl.includes("/api/v1/access/activate")) {
+      return new Response(JSON.stringify({}), { status: 200 });
+    }
+    return new Response(JSON.stringify({
     access_id: accessId,
     access_type: accessType,
     activated_at: "2026-05-17T02:00:00Z",
@@ -528,7 +523,8 @@ function mockActivationEnvironment(accessId: string, accessType: "trial" | "invi
       auction: { limit: accessType === "trial" ? 2 : 5, remaining: accessType === "trial" ? 2 : 5, used: 0 },
       limit_review: { limit: accessType === "trial" ? 2 : 5, remaining: accessType === "trial" ? 2 : 5, used: 0 }
     }
-  }), { status: 200 }));
+  }), { status: 200 });
+  });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }

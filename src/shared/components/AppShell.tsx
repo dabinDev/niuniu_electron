@@ -3,7 +3,7 @@ import { Bell, Copy, Download, Info, Minus, PanelLeftClose, PanelLeftOpen, Refre
 import { useNavigate } from "react-router-dom";
 import { navigationItems } from "../../app/navigation";
 import { type AccessActivation, usePreferencesStore } from "../../app/preferencesStore";
-import { activateAccess } from "../../core/access/accessActivation";
+import { activateAccess, applyTrialAccess } from "../../core/access/accessActivation";
 import { ApiClient } from "../../core/api/apiClient";
 import { getMachineCodeInfo, type MachineCodeInfo } from "../../core/access/machineCode";
 import {
@@ -552,29 +552,29 @@ function InvitationNoticeDialog({
   machineInfo: MachineCodeInfo | null;
   onActivated: (value: AccessActivation) => void;
 }) {
-  const [trialCode, setTrialCode] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [statusText, setStatusText] = useState("");
   const [activating, setActivating] = useState(false);
-  const trimmedTrialCode = trialCode.trim();
   const trimmedInviteCode = inviteCode.trim();
   const machineCode = machineInfo?.machineCode ?? "";
 
-  async function runActivation(mode: "trial" | "invite", codeOverride?: string) {
-    const code = codeOverride ?? (mode === "trial" ? trimmedTrialCode : trimmedInviteCode);
-    if (!machineInfo || !code) {
+  async function runActivation(mode: "trial" | "invite") {
+    const code = trimmedInviteCode;
+    if (!machineInfo || (mode === "invite" && !code)) {
       setStatusText("正在读取机器码，请稍候再试。");
       return;
     }
     setActivating(true);
     setStatusText("");
     try {
-      const activation = await activateAccess({
-        accessCode: code,
-        apiBaseUrl,
-        machine: machineInfo,
-        mode
-      });
+      const activation = mode === "trial"
+        ? await applyTrialAccess({ apiBaseUrl, machine: machineInfo })
+        : await activateAccess({
+            accessCode: code,
+            apiBaseUrl,
+            machine: machineInfo,
+            mode
+          });
       onActivated(activation);
     } catch (error) {
       setStatusText(errorMessage(error));
@@ -617,9 +617,9 @@ function InvitationNoticeDialog({
         </div>
 
         <div className="invite-trial-row">
-          <span>没有邀请码也可以先进入试用模式，后续用户体系上线后部分能力可能需要重新验证。</span>
-          <button className="ghost-button" disabled={activating || !machineInfo} onClick={() => void runActivation("trial", "TRIAL")} type="button">
-            {activating ? "验证中" : "试用体验"}
+          <span>没有邀请码也可以先进入体验模式，系统会自动为当前机器申请一机一码体验资格。</span>
+          <button className="ghost-button" disabled={activating || !machineInfo} onClick={() => void runActivation("trial")} type="button">
+            {activating ? "申请中" : "试用体验"}
           </button>
         </div>
 
@@ -628,21 +628,6 @@ function InvitationNoticeDialog({
           <code>{machineCode || "读取中..."}</code>
           <button aria-label="复制机器码" className="icon-button" disabled={!machineCode} onClick={() => void copyText(machineCode)} type="button">
             <Copy size={14} />
-          </button>
-        </div>
-
-        <div className="invite-code-grid">
-          <label className="field-row invite-code-field">
-            <span>体验码</span>
-            <input
-              aria-label="体验码"
-              onChange={(event) => setTrialCode(event.target.value)}
-              placeholder="请输入试用体验码"
-              value={trialCode}
-            />
-          </label>
-          <button className="ghost-button" disabled={activating || !trimmedTrialCode || !machineInfo} onClick={() => void runActivation("trial")} type="button">
-            {activating ? "验证中" : "验证体验码"}
           </button>
         </div>
 

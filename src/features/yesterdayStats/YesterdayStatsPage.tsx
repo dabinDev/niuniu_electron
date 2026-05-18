@@ -41,7 +41,7 @@ export function YesterdayStatsPage() {
   const table = current ? recordListToTable(getRecords(current, "items"), ["code", "name", "open_change_pct", "change_pct", "amount_yi", "region", "industry"]) : { columns: [], rows: [] };
   const formattedRows = table.rows.map((row) => ({
     ...row,
-    onClick: () => setSelectedStock(String(row.values.code ?? "")),
+    onDoubleClick: () => setSelectedStock(String(row.values.code ?? "")),
     values: {
       ...row.values,
       change_pct: formatPercentValue(row.values.change_pct),

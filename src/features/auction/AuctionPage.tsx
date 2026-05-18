@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { asRecord, getRecords, getString, recordListToTable, tablesToSheets } from "../../core/api/data";
+import { asArray, asRecord, getRecords, getString, recordListToTable, tablesToSheets } from "../../core/api/data";
 import { queryKeys } from "../../core/api/queryKeys";
 import { useApiClient } from "../../core/api/useApiClient";
 import { displayDate, displayDateTime } from "../../core/format/date";
@@ -28,6 +28,7 @@ export function AuctionPage() {
   const [activeRank, setActiveRank] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
+  const [profileStock, setProfileStock] = useState<string | null>(null);
   const aiUsage = useAiFeatureUsage("auction");
   const query = useQuery({
     queryFn: () => client.getMap("/api/v1/auction/page?days=5&stock_limit=24&rank_limit=80"),
@@ -118,13 +119,19 @@ export function AuctionPage() {
               <span>总数：{getString(column, "total", "0")}</span>
             </div>
             <div className="auction-stock-list">
-              {getRecords(column, "items").slice(0, 9).map((item) => (
-                <article className={`tone-${changeTone(getString(item, "zhangfu", "0"))} ${selectedStock === getString(item, "code") ? "selected" : ""}`} key={getString(item, "code")} onClick={() => setSelectedStock(getString(item, "code"))}>
-                  <b>{getString(item, "name")}</b>
-                  <span>{getString(item, "lianban")} · {formatPercentValue(getString(item, "zhangfu"))}</span>
-                  <small>{getString(item, "code")} · {getString(item, "concepts", "")}</small>
-                </article>
-              ))}
+              {getRecords(column, "items").slice(0, 9).map((item) => {
+                const code = getString(item, "code");
+                const isSameStock = Boolean(selectedStock && selectedStock === code);
+                return (
+                  <article className={`tone-${changeTone(getString(item, "zhangfu", "0"))} ${isSameStock ? "selected same-stock" : ""}`} data-stock-code={code} key={code} onClick={() => setSelectedStock(code)} onDoubleClick={() => setProfileStock(code)}>
+                    {isSameStock ? <span className="auction-same-stock-badge">同股</span> : null}
+                    <b>{getString(item, "name")}</b>
+                    <span className="auction-stock-change">{getString(item, "lianban")} · {formatPercentValue(getString(item, "zhangfu"))}</span>
+                    <AuctionAmountTimeline item={item} timeLabels={asArray(column.time_labels)} />
+                    <small>{code} · {formatConcepts(item.concepts)}</small>
+                  </article>
+                );
+              })}
             </div>
           </GlassCard>
         ))}
@@ -147,17 +154,34 @@ export function AuctionPage() {
           {currentRankItems.length === 0 ? (
             <EmptyState action="切换排名分组" description="当前排名分组为空，可能是竞价条件没有命中。" hint={getString(currentRank ?? {}, "title", "")} title="排名暂无数据" tone="market" />
           ) : (
-            <AuctionRankList items={currentRankItems} onSelect={setSelectedStock} selectedStock={selectedStock} />
+            <AuctionRankList items={currentRankItems} onOpenProfile={setProfileStock} onSelect={setSelectedStock} selectedStock={selectedStock} />
           )}
         </GlassCard>
         <AiAnalysisPanel ai={asRecord(data.ai_analysis)} loading={aiMutation.isPending} onGenerate={() => aiMutation.mutate()} quota={aiUsage.usage} title="竞价 AI 分析" />
       </section>
-      {selectedStock ? <StockProfileSheet onClose={() => setSelectedStock(null)} symbol={selectedStock} /> : null}
+      {profileStock ? <StockProfileSheet onClose={() => setProfileStock(null)} symbol={profileStock} /> : null}
     </section>
   );
 }
 
-function AuctionRankList({ items, onSelect, selectedStock }: { items: Record<string, unknown>[]; onSelect: (code: string) => void; selectedStock: string | null }) {
+function AuctionAmountTimeline({ item, timeLabels }: { item: Record<string, unknown>; timeLabels: unknown[] }) {
+  const amounts = getAuctionAmountPoints(item, timeLabels);
+  if (amounts.length === 0) {
+    return null;
+  }
+  return (
+    <div className="auction-amount-timeline" aria-label="9点15 9点20 9点25竞价金额对比">
+      {amounts.map((point) => (
+        <span className={`auction-amount-point ${point.tone ? `trend-${point.tone}` : ""}`} key={point.label}>
+          <em>{point.label}</em>
+          <b>{point.value}</b>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function AuctionRankList({ items, onOpenProfile, onSelect, selectedStock }: { items: Record<string, unknown>[]; onOpenProfile: (code: string) => void; onSelect: (code: string) => void; selectedStock: string | null }) {
   return (
     <div className="auction-rank-list" role="list">
       {items.map((item, index) => {
@@ -168,7 +192,7 @@ function AuctionRankList({ items, onSelect, selectedStock }: { items: Record<str
         const bidTone = changeTone(bidChange);
         const currentTone = changeTone(currentChange);
         return (
-          <button className={`auction-rank-row tone-${bidTone} ${selectedStock === code ? "selected" : ""}`} key={`${code}-${index}`} onClick={() => onSelect(code)} role="listitem" type="button">
+          <button className={`auction-rank-row tone-${bidTone} ${selectedStock === code ? "selected" : ""}`} key={`${code}-${index}`} onClick={() => onSelect(code)} onDoubleClick={() => onOpenProfile(code)} role="listitem" type="button">
             <span className={`auction-rank-no ${index < 3 ? "top" : ""}`}>{String(index + 1).padStart(2, "0")}</span>
             <span className="auction-rank-main">
               <strong>{name}</strong>
@@ -195,6 +219,47 @@ function AuctionRankList({ items, onSelect, selectedStock }: { items: Record<str
   );
 }
 
+function getAuctionAmountPoints(item: Record<string, unknown>, timeLabels: unknown[]): { label: string; value: string; tone?: string }[] {
+  const rawAmounts = Array.isArray(item.amounts) ? item.amounts : [];
+  const labelOrder = ["9:15", "9:20", "9:25"];
+  const labelledAmounts = new Map(
+    rawAmounts
+      .map((raw) => parseAmountPoint(raw))
+      .filter((point): point is { label: string; value: string } => Boolean(point))
+      .filter((point) => labelOrder.includes(point.label))
+      .map((point) => [point.label, point.value])
+  );
+  const labels = timeLabels.map((label) => String(label));
+  const valuesByLabel = new Map<string, string>(labelledAmounts);
+  if (valuesByLabel.size === 0) {
+    rawAmounts.forEach((raw, index) => {
+      const label = labels[index] ?? labelOrder[index] ?? "";
+      if (labelOrder.includes(label)) {
+        const value = cleanDisplayText(String(raw ?? "").replace(/\byi\b/gi, "亿").replace(/\bwan\b/gi, "万"));
+        if (value !== "--") {
+          valuesByLabel.set(label, value);
+        }
+      }
+    });
+  }
+  const zhangfu = formatPercentValue(item.zhangfu);
+  if (valuesByLabel.size === 0 && zhangfu === "--") {
+    return [];
+  }
+  const amountPoints = labelOrder.map((label) => ({ label, value: valuesByLabel.get(label) ?? "--" }));
+  const trendPoint = { label: "涨幅", value: zhangfu, tone: changeTone(zhangfu) };
+  return [...amountPoints, trendPoint];
+}
+
+function parseAmountPoint(value: unknown): { label: string; value: string } | null {
+  const normalized = cleanDisplayText(String(value ?? "").replace(/\byi\b/gi, "亿").replace(/\bwan\b/gi, "万"));
+  const match = normalized.match(/^(9:(?:15|20|25))\s*(.+)$/);
+  if (!match) {
+    return null;
+  }
+  return { label: match[1], value: match[2].trim() || "--" };
+}
+
 function formatPercentValue(value: unknown): string {
   const trimmed = String(value ?? "").trim();
   if (!trimmed || trimmed === "--") return "--";
@@ -211,6 +276,13 @@ function formatWanValue(value: unknown): string {
     return `${formatNumber(parsed / 10000)}亿`;
   }
   return `${formatNumber(parsed)}万`;
+}
+
+function formatConcepts(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map((item) => cleanDisplayText(String(item ?? ""))).filter((item) => item !== "--").join(" / ") || "--";
+  }
+  return cleanDisplayText(String(value ?? ""));
 }
 
 function formatNumber(value: number): string {
