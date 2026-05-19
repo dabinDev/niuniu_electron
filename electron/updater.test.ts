@@ -27,18 +27,29 @@ vi.mock("electron-updater", () => ({
   }
 }));
 
-import { feedUrlFromDownloadUrl } from "./updater.js";
+import { feedUrlFromDownloadUrl, updateSourceFromDownloadUrl } from "./updater.js";
 
 describe("feedUrlFromDownloadUrl", () => {
-  it("uses the release directory for generic electron-updater metadata", () => {
-    expect(feedUrlFromDownloadUrl("https://example.com/niuniu/releases/electron_niuniu-0.2.0-setup.exe")).toBe(
-      "https://example.com/niuniu/releases/"
-    );
+  it("treats installer URLs as direct internal downloads instead of generic latest.yml feeds", () => {
+    expect(updateSourceFromDownloadUrl("https://example.com/niuniu/releases/electron_niuniu-0.2.0-setup.exe")).toEqual({
+      type: "installer",
+      url: "https://example.com/niuniu/releases/electron_niuniu-0.2.0-setup.exe"
+    });
+    expect(feedUrlFromDownloadUrl("https://example.com/niuniu/releases/electron_niuniu-0.2.0-setup.exe")).toBe("");
   });
 
-  it("removes query strings and hashes from installer URLs", () => {
-    expect(feedUrlFromDownloadUrl("https://cdn.example.com/app/electron_niuniu.exe?token=abc#download")).toBe(
-      "https://cdn.example.com/app/"
-    );
+  it("keeps query strings on signed installer URLs for direct downloads", () => {
+    expect(updateSourceFromDownloadUrl("https://cdn.example.com/app/electron_niuniu.exe?token=abc#download")).toEqual({
+      type: "installer",
+      url: "https://cdn.example.com/app/electron_niuniu.exe?token=abc"
+    });
+  });
+
+  it("still supports explicit generic feed directories", () => {
+    expect(updateSourceFromDownloadUrl("https://example.com/niuniu/releases/")).toEqual({
+      type: "feed",
+      url: "https://example.com/niuniu/releases/"
+    });
+    expect(feedUrlFromDownloadUrl("https://example.com/niuniu/releases/")).toBe("https://example.com/niuniu/releases/");
   });
 });

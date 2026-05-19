@@ -385,8 +385,73 @@ describe("AppShell", () => {
     expect(copyText).toHaveBeenCalledWith("NN-SIDEBAR-MACHINE");
   });
 
+  it("waits for the real Electron app version before automatic update checks", async () => {
+    let resolveAppVersion: ((value: { isPackaged: boolean; version: string }) => void) | null = null;
+    const getAppVersion = vi.fn(() => new Promise<{ isPackaged: boolean; version: string }>((resolve) => {
+      resolveAppVersion = resolve;
+    }));
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const requestUrl = String(url);
+      if (requestUrl.includes("current_version=0.1.0")) {
+        return new Response(JSON.stringify({
+          current_version: "0.1.0",
+          latest_version: "0.2.2",
+          platform: "win",
+          has_update: true,
+          force_update: true,
+          download_url: "https://example.com/electron_niuniu-0.2.2.exe"
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify({
+        current_version: "0.2.3",
+        latest_version: "0.2.2",
+        platform: "win",
+        has_update: true,
+        force_update: false,
+        download_url: "https://example.com/electron_niuniu-0.2.2.exe"
+      }), { status: 200 });
+    });
+    Object.defineProperty(window, "niuniu", {
+      configurable: true,
+      value: {
+        appName: "NiuNiu",
+        getAppVersion,
+        getMachineCode: async () => ({ machineCode: "NN-EXISTING", version: "win-v1" }),
+        onUpdateStatus: vi.fn(() => () => undefined)
+      }
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <MemoryRouter initialEntries={["/overview"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(getAppVersion).toHaveBeenCalled());
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveAppVersion?.({ isPackaged: true, version: "0.2.3" });
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("current_version=0.1.0"))).toBe(false);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("current_version=0.2.3"))).toBe(true);
+    expect(screen.queryByRole("dialog", { name: "版本更新" })).not.toBeInTheDocument();
+  });
+
   it("opens about dialog and checks updates from the version label", async () => {
     const checkForInstallerUpdate = vi.fn(async () => ({ appVersion: "0.1.0", phase: "not-available" }));
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      current_version: "0.1.0",
+      latest_version: "0.1.0",
+      platform: "win",
+      has_update: false,
+      force_update: false
+    }), { status: 200 }));
     Object.defineProperty(window, "niuniu", {
       configurable: true,
       value: {
@@ -397,13 +462,7 @@ describe("AppShell", () => {
         onUpdateStatus: vi.fn(() => () => undefined)
       }
     });
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
-      current_version: "0.1.0",
-      latest_version: "0.1.0",
-      platform: "win",
-      has_update: false,
-      force_update: false
-    }), { status: 200 })));
+    vi.stubGlobal("fetch", fetchMock);
 
     render(
       <MemoryRouter initialEntries={["/overview"]}>
@@ -417,7 +476,53 @@ describe("AppShell", () => {
     expect(screen.getByRole("dialog", { name: "关于牛牛开盘" })).toBeInTheDocument();
     await userEvent.click(await screen.findByRole("button", { name: "0.1.0" }));
 
-    await waitFor(() => expect(checkForInstallerUpdate).toHaveBeenCalled());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(await screen.findByText("当前已是最新版本。")).toBeInTheDocument();
+    expect(checkForInstallerUpdate).not.toHaveBeenCalled();
+  });
+
+  it("does not open updater or download when the published version is not newer", async () => {
+    const checkForInstallerUpdate = vi.fn(async () => ({ appVersion: "0.2.3", phase: "not-available" }));
+    const downloadInstallerUpdate = vi.fn(async () => {
+      throw new Error("Please check update first");
+    });
+    Object.defineProperty(window, "niuniu", {
+      configurable: true,
+      value: {
+        appName: "NiuNiu",
+        checkForInstallerUpdate,
+        downloadInstallerUpdate,
+        getAppVersion: async () => ({ isPackaged: true, version: "0.2.3" }),
+        getMachineCode: async () => ({ machineCode: "NN-EXISTING", version: "win-v1" }),
+        onUpdateStatus: vi.fn(() => () => undefined)
+      }
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      current_version: "0.2.3",
+      latest_version: "0.2.2",
+      platform: "win",
+      has_update: true,
+      force_update: true,
+      download_url: "https://example.com/electron_niuniu-0.2.2.exe",
+      release_notes_markdown: "older release"
+    }), { status: 200 })));
+
+    render(
+      <MemoryRouter initialEntries={["/overview"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "关于牛牛开盘" }));
+    await userEvent.click(await screen.findByRole("button", { name: "0.2.3" }));
+
+    expect(await screen.findByText("当前已是最新版本。")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "版本更新" })).not.toBeInTheDocument();
+    expect(checkForInstallerUpdate).not.toHaveBeenCalled();
+    expect(downloadInstallerUpdate).not.toHaveBeenCalled();
+    expect(screen.queryByText("Please check update first")).not.toBeInTheDocument();
   });
 
   it("locks a forced update modal and renders installer download progress", async () => {

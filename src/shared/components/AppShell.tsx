@@ -46,6 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [machineInfo, setMachineInfo] = useState<MachineCodeInfo | null>(null);
   const [appVersion, setAppVersion] = useState<AppVersionInfo>({ isPackaged: false, version: "0.1.0" });
+  const [appVersionLoaded, setAppVersionLoaded] = useState(!window.niuniu?.getAppVersion);
   const [updateCheck, setUpdateCheck] = useState<AppVersionCheckResult | null>(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [installerStatus, setInstallerStatus] = useState<InstallerUpdateStatus>({ appVersion: "0.1.0", phase: "idle" });
@@ -130,13 +131,19 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!window.niuniu?.getAppVersion) {
+      setAppVersionLoaded(true);
       return undefined;
     }
     let mounted = true;
     void getAppVersion().then((version) => {
       if (mounted) {
         setAppVersion(version);
+        setAppVersionLoaded(true);
         setInstallerStatus((status) => ({ ...status, appVersion: version.version }));
+      }
+    }).catch(() => {
+      if (mounted) {
+        setAppVersionLoaded(true);
       }
     });
     const unsubscribe = onUpdateStatus((status) => {
@@ -161,6 +168,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       }
       return;
     }
+    if (!appVersionLoaded) {
+      if (source === "manual") {
+        setUpdateStatusText("正在读取当前版本，请稍后再试。");
+      }
+      return;
+    }
     setCheckingUpdate(true);
     setUpdateStatusText(source === "manual" ? "正在检查更新..." : "");
     try {
@@ -171,9 +184,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         setInstallerStatus({ appVersion: current, phase: "available", info: { version: result.latestVersion } });
         setUpdateModalOpen(true);
         setUpdateStatusText("");
-      } else if (source === "manual") {
-        await checkForInstallerUpdate();
-        setUpdateStatusText("当前已是最新版本。");
+      } else {
+        setUpdateCheck(null);
+        setUpdateModalOpen(false);
+        setInstallerStatus({ appVersion: current, phase: "not-available" });
+        if (source === "manual") {
+          setUpdateStatusText("当前已是最新版本。");
+        }
       }
     } catch (error) {
       if (source === "manual") {
@@ -182,10 +199,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     } finally {
       setCheckingUpdate(false);
     }
-  }, [accessActivation, apiClient, appVersion.version]);
+  }, [accessActivation, apiClient, appVersion.version, appVersionLoaded]);
 
   const runDownloadUpdate = useCallback(async () => {
     setUpdateStatusText("");
+    if (!updateCheck?.hasUpdate || !updateCheck.downloadUrl.trim()) {
+      setInstallerStatus({ appVersion: appVersion.version, phase: "not-available" });
+      setUpdateStatusText("请先检查到可用更新后再下载。");
+      return;
+    }
     installRequestedRef.current = false;
     setInstallerStatus((status) => ({
       appVersion: status.appVersion || appVersion.version,
@@ -203,15 +225,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       setInstallerStatus({ appVersion: appVersion.version, error: errorMessage(error), phase: "error" });
       setUpdateStatusText(errorMessage(error));
     }
-  }, [appVersion.version, requestInstallUpdate, updateCheck?.fileSize]);
+  }, [appVersion.version, requestInstallUpdate, updateCheck]);
 
   useEffect(() => {
-    if (!window.niuniu?.getAppVersion || !accessActivation || !appVersion.version || autoCheckedVersionRef.current === appVersion.version) {
+    if (!window.niuniu?.getAppVersion || !accessActivation || !appVersionLoaded || !appVersion.version || autoCheckedVersionRef.current === appVersion.version) {
       return;
     }
     autoCheckedVersionRef.current = appVersion.version;
     void runVersionCheck("auto");
-  }, [accessActivation, appVersion.version, runVersionCheck]);
+  }, [accessActivation, appVersion.version, appVersionLoaded, runVersionCheck]);
 
   return (
     <div className={className} data-theme={theme}>

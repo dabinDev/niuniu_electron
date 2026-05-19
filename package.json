@@ -1,16 +1,20 @@
 {
   "name": "niuniu_electron",
-  "version": "0.2.2",
+  "version": "0.2.5",
   "private": true,
   "type": "module",
   "main": "dist\\electron\\main.js",
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1 --port 5173 --strictPort\" \"wait-on tcp:5173 && electron .\"",
     "build": "npm run icon:generate && npm run typecheck && vite build && tsc -p tsconfig.node.json",
-    "icon:generate": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-niuniu-icon.ps1 && node scripts/generate-niuniu-ico.mjs",
+    "icon:generate": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-niuniu-icon.ps1 && node scripts/generate-niuniu-ico.mjs && node scripts/generate-niuniu-icns.mjs",
     "preview": "vite --host 127.0.0.1 --port 5173 --strictPort",
-    "package:win": "electron-builder --win nsis --x64",
-    "package:win:portable": "electron-builder --win portable --x64",
+    "package:win": "electron-builder --win nsis --x64 --config.electronDist=node_modules/electron/dist",
+    "package:win:portable": "electron-builder --win portable --x64 --config.electronDist=node_modules/electron/dist",
+    "package:mac": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-mac.ps1 -Arch x64",
+    "package:mac:x64": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-mac.ps1 -Arch x64",
+    "package:mac:arm64": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-mac.ps1 -Arch arm64",
+    "package:mac:universal": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-mac.ps1 -Arch universal",
     "smoke:packaged-window": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/packaged-window-smoke.ps1",
     "smoke:window-controls": "node scripts/window-control-smoke.mjs",
     "test": "vitest run",
@@ -21,8 +25,6 @@
     "appId": "cn.cylonai.niuniu.electron.client",
     "productName": "牛牛开盘",
     "executableName": "electron_niuniu",
-    "artifactName": "electron_niuniu.exe",
-    "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "release"
     },
@@ -37,6 +39,7 @@
       }
     ],
     "win": {
+      "artifactName": "electron_niuniu.exe",
       "icon": "build/icon.ico",
       "signAndEditExecutable": false,
       "target": [
@@ -48,6 +51,39 @@
         }
       ],
       "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "artifactName": "electron_niuniu-${version}-${arch}.${ext}",
+      "category": "public.app-category.finance",
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null
+    },
+    "dmg": {
+      "title": "牛牛开盘 ${version}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "x": 100,
+        "y": 100,
+        "width": 540,
+        "height": 380
+      }
     },
     "nsis": {
       "oneClick": false,

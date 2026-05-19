@@ -50,4 +50,24 @@ describe("checkLatestAppVersion", () => {
       publishedAt: null
     });
   });
+
+  it("does not treat string false or lower latest versions as an available update", async () => {
+    const getMap = vi.fn().mockResolvedValue({
+      current_version: "0.2.3",
+      latest_version: "0.2.2",
+      platform: "win",
+      has_update: "false",
+      force_update: "false",
+      download_url: "https://example.com/electron_niuniu-0.2.2.exe",
+      file_size: 1024,
+      release_notes_markdown: "older release"
+    });
+
+    const result = await checkLatestAppVersion({ client: { getMap }, currentVersion: "0.2.3" });
+
+    expect(result.hasUpdate).toBe(false);
+    expect(result.forceUpdate).toBe(false);
+    expect(result.downloadUrl).toBe("");
+    expect(result.releaseNotesMarkdown).toBe("");
+  });
 });
