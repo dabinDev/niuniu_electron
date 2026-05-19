@@ -37,10 +37,13 @@ describe("packaged Electron main entry", () => {
     expect(packageJson.build.mac?.artifactName).toBe("electron_niuniu-${version}-${arch}.${ext}");
     expect(packageJson.build.mac?.icon).toBe("build/icon.icns");
     expect(packageJson.build.mac?.target).toEqual(["dmg", "zip"]);
+    expect(packageJson.scripts["icon:generate"]).toContain("scripts/generate-niuniu-icon.mjs");
     expect(packageJson.scripts["package:win"]).toContain("--config.electronDist=node_modules/electron/dist");
+    expect(packageJson.scripts["package:win"]).toContain("npm run icon:generate");
     expect(packageJson.scripts["package:win:portable"]).toContain("--config.electronDist=node_modules/electron/dist");
-    expect(packageJson.scripts["package:mac:x64"]).toContain("scripts/package-mac.ps1 -Arch x64");
-    expect(packageJson.scripts["package:mac:arm64"]).toContain("scripts/package-mac.ps1 -Arch arm64");
+    expect(packageJson.scripts["package:mac:x64"]).toContain("npm run icon:generate");
+    expect(packageJson.scripts["package:mac:x64"]).toContain("electron-builder --mac dmg zip --x64");
+    expect(packageJson.scripts["package:mac:arm64"]).toContain("electron-builder --mac dmg zip --arm64");
   });
 
   it("provides a macOS CI package workflow for hosts that cannot build macOS locally", () => {
