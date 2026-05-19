@@ -3,9 +3,9 @@ import { normalizeApiBaseUrl } from "./apiBaseUrl";
 import { ApiClient } from "./apiClient";
 
 describe("normalizeApiBaseUrl", () => {
-  it("uses the default local API when input is empty", () => {
-    expect(normalizeApiBaseUrl("")).toBe("http://127.0.0.1:18081");
-    expect(normalizeApiBaseUrl(undefined)).toBe("http://127.0.0.1:18081");
+  it("uses the production API when input is empty", () => {
+    expect(normalizeApiBaseUrl("")).toBe("https://niuniu.cylonai.cn");
+    expect(normalizeApiBaseUrl(undefined)).toBe("https://niuniu.cylonai.cn");
   });
 
   it("trims user supplied API URLs and removes trailing slashes", () => {
