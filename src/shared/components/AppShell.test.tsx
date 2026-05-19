@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { usePreferencesStore } from "../../app/preferencesStore";
+import { defaultApiBaseUrl } from "../../core/api/apiBaseUrl";
 import { AppShell } from "./AppShell";
 
 describe("AppShell", () => {
@@ -294,7 +295,7 @@ describe("AppShell", () => {
     expect(usePreferencesStore.getState().inviteAccessMode).toBe("trial");
     expect(usePreferencesStore.getState().accessActivation?.accessId).toBe("trial_access");
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:18081/api/v1/access/trial/apply",
+      `${defaultApiBaseUrl}/api/v1/access/trial/apply`,
       expect.objectContaining({
         body: expect.stringContaining('"machine_code":"NN-TEST-MACHINE"'),
         method: "POST"
@@ -329,7 +330,7 @@ describe("AppShell", () => {
     expect(usePreferencesStore.getState().inviteCode).toBe("");
     expect(usePreferencesStore.getState().accessActivation?.accessId).toBe("invite_access");
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:18081/api/v1/access/activate",
+      `${defaultApiBaseUrl}/api/v1/access/activate`,
       expect.objectContaining({ method: "POST" })
     );
   });
