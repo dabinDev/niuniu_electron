@@ -18,7 +18,7 @@ export const navigationItems: NavigationItem[] = [
   { path: "/node", mark: "节", label: "市场节点", shortcut: "F7", description: "指数节点、板块联动和关键龙头" },
   { path: "/market-center", mark: "行", label: "行情中心", shortcut: "F8", description: "市场表格、空头反馈与交易日切换" },
   { path: "/news", mark: "讯", label: "消息资讯", shortcut: "F10", description: "7x24 快讯、热榜、日历和月份规律" },
-  { path: "/ask-ai", mark: "AI", label: "问 AI", shortcut: "F11", description: "复盘上下文、问答辅助和历史记录" },
+  { path: "/ask-ai", mark: "智", label: "策略问答", shortcut: "F11", description: "复盘上下文、策略问答和历史记录" },
   { path: "/jobs", mark: "任", label: "任务中心", shortcut: "F12", description: "管理员采集任务、服务状态和手动触发" }
 ];
 

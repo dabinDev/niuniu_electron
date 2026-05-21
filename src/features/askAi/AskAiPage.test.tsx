@@ -104,20 +104,20 @@ describe("AskAiPage", () => {
       });
       if (requestUrl.includes("/api/v1/ask-ai/usage-status")) return jsonResponse({ client_id: "electron-test", features: {}, has_own_key: true });
       if (requestUrl.includes("/api/v1/ask-ai/client-config")) return jsonResponse({ api_key_configured: true });
-      if (requestUrl.includes("/api/v1/ask-ai/generate")) return jsonResponse({ result: "## AI 复盘结果\n\n- 主线：算力\n- 风险：缩量\n\n**结论**：等待确认。" });
+      if (requestUrl.includes("/api/v1/ask-ai/generate")) return jsonResponse({ result: "## 策略复盘结果\n\n- 主线：算力\n- 风险：缩量\n\n**结论**：等待确认。" });
       return jsonResponse({});
     });
 
     renderWithClient(fetchMock);
 
-    expect(await screen.findByText("AI 服务设置")).toBeInTheDocument();
+    expect(await screen.findByText("策略服务设置")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("个人 Kimi Key"), { target: { value: "personal-test-key" } });
     fireEvent.change(screen.getByLabelText("模型"), { target: { value: "kimi-k2.6" } });
     fireEvent.change(screen.getByLabelText("本地日上限"), { target: { value: "2" } });
-    await user.click(screen.getByRole("button", { name: "保存 AI 设置" }));
+    await user.click(screen.getByRole("button", { name: "保存策略设置" }));
     await user.click(screen.getByRole("button", { name: /生成回答/ }));
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "AI 复盘结果" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "策略复盘结果" })).toBeInTheDocument());
     expect(screen.getByText("主线：算力")).toBeInTheDocument();
     expect(screen.getByText("风险：缩量")).toBeInTheDocument();
     expect(screen.getByText("结论")).toBeInTheDocument();
@@ -160,7 +160,7 @@ describe("AskAiPage", () => {
 
     renderWithClient(fetchMock);
 
-    await screen.findByText("AI 服务设置");
+    await screen.findByText("策略服务设置");
     await user.click(screen.getByRole("button", { name: /今日额度已用完/ }));
 
     expect(await screen.findByText(/已达到本地日调用上限/)).toBeInTheDocument();
@@ -190,7 +190,7 @@ describe("AskAiPage", () => {
 
     const button = await screen.findByRole("button", { name: /今日额度已用完/ });
     expect(button).toBeDisabled();
-    expect(screen.getByTestId("ask-ai-server-usage")).toHaveTextContent("服务端 ask_ai：今日已用 2/2 次，剩余 0 次。");
+    expect(screen.getByTestId("ask-ai-server-usage")).toHaveTextContent("服务端策略问答：今日已用 2/2 次，剩余 0 次。");
   });
 });
 

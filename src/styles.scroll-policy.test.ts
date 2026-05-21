@@ -31,9 +31,14 @@ describe("page scroll policy", () => {
     }
     expect(policy).toContain("overflow: visible !important");
     expect(policy).toContain("max-height: none !important");
+    expect(policy).toContain(".page-scroll .data-table:not(.review-groups-panel .data-table):not(.market-center-panel .data-table)");
     const horizontalScrollExceptions = policy.match(/overflow-x: auto !important/g) ?? [];
-    expect(horizontalScrollExceptions).toHaveLength(1);
+    expect(horizontalScrollExceptions.length).toBeGreaterThanOrEqual(5);
     expect(policy).toMatch(/\.page-scroll \.review-groups-panel \.data-table\s*\{[\s\S]*overflow-x: auto !important/);
+    expect(policy).toMatch(/\.page-scroll \.height-matrix-scroll\s*\{[\s\S]*overflow-x: auto !important/);
+    expect(policy).toMatch(/\.page-scroll \.matrix-scroll\s*\{[\s\S]*overflow-x: auto !important/);
+    expect(policy).toMatch(/\.page-scroll \.node-date-strip\s*\{[\s\S]*overflow-x: auto !important/);
+    expect(policy).toMatch(/\.page-scroll \.market-center-panel \.data-table\s*\{[\s\S]*overflow-x: auto !important/);
     expect(policy).not.toContain("overflow-y: auto !important");
   });
 });

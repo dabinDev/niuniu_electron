@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { usePreferencesStore } from "../../app/preferencesStore";
 import { MarketCenterPage } from "./MarketCenterPage";
@@ -76,6 +78,13 @@ describe("MarketCenterPage", () => {
     expect(within(table as HTMLElement).getByText("-1.1%")).toHaveClass("change-cell", "text-down");
     expect(within(table as HTMLElement).getByText("-3.2%")).toHaveClass("change-cell", "text-down");
     expect(table?.querySelector(".data-row")).toHaveClass("row-down");
+  });
+
+  it("keeps wide market tables inside a horizontal table scroller", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+
+    expect(css).toMatch(/\.page-scroll\s+\.market-center-panel\s+\.data-table\s*\{[\s\S]*max-width:\s*100%\s*!important;[\s\S]*overflow-x:\s*auto\s*!important/);
+    expect(css).toMatch(/\.page-scroll\s+\.market-center-panel\s+\.data-table-head,[\s\S]*\.page-scroll\s+\.market-center-panel\s+\.data-row\s*\{[\s\S]*min-width:\s*max\(100%,\s*980px\)\s*!important/);
   });
 });
 

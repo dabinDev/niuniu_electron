@@ -515,7 +515,7 @@ function UpdateDialog({
       <section aria-label="版本更新" className="update-dialog" role="dialog">
         <header className="card-head update-dialog-head">
           <div>
-            <span className="card-eyebrow">{check.forceUpdate ? "FORCE UPDATE" : "UPDATE AVAILABLE"}</span>
+            <span className="card-eyebrow">{check.forceUpdate ? "强制更新" : "发现更新"}</span>
             <b>发现新版本 {check.latestVersion}</b>
             <p>当前版本 {check.currentVersion} · {check.forceUpdate ? "强制更新" : "普通更新"}</p>
           </div>
@@ -620,7 +620,7 @@ function InvitationNoticeDialog({
             牛
           </div>
           <div>
-            <span className="card-eyebrow">INVITE TRIAL / LEARNING ONLY</span>
+            <span className="card-eyebrow">内部试用 · 学习研究</span>
             <b>欢迎进入牛牛开盘复盘工作台</b>
             <p>当前版本处于内部邀请试用阶段。请先确认使用边界，再选择试用体验或输入邀请码进入。</p>
           </div>
@@ -636,8 +636,8 @@ function InvitationNoticeDialog({
             <span>所有功能不构成股票、基金或其他金融产品的投资建议。请保持独立判断，理性看待市场波动。</span>
           </article>
           <article className="ai">
-            <b>AI 使用声明</b>
-            <span>AI 内容由模型基于数据综合生成，可能存在遗漏、偏差或误读，作者不对 AI 输出及其使用结果负责。</span>
+            <b>模型使用声明</b>
+            <span>模型内容基于数据综合生成，可能存在遗漏、偏差或误读，作者不对模型输出及其使用结果负责。</span>
           </article>
           <article>
             <b>决策责任</b>
@@ -686,7 +686,7 @@ function MessageCenterPanel({ onClose }: { onClose: () => void }) {
   const notices = [
     { tag: "快讯", title: "7x24 消息中心已接入资讯页", detail: "可在牛牛资讯页继续搜索关键词、筛选重点消息。" },
     { tag: "公告", title: "复盘数据按当前接口实时刷新", detail: "若看到缓存时间滞后，请联系管理员检查采集任务。" },
-    { tag: "提醒", title: "问 AI 页面支持本地限额和个人 Kimi Key", detail: "公共额度触发限制时，可在问 AI 页面展开服务设置。" }
+    { tag: "提醒", title: "策略问答支持本地限额和个人 Kimi Key", detail: "公共额度触发限制时，可在策略问答页展开服务设置。" }
   ];
 
   return (

@@ -88,7 +88,7 @@ export function AskAiPage() {
     onSuccess: (data) => {
       const result = getString(data, "result", "");
       setAnswer(result);
-      setStatusText("AI 复盘已生成。");
+      setStatusText("策略复盘已生成。");
       const usage = recordAskAiUsage(loadAskAiUsageStore(), settings, usageDate);
       saveAskAiUsageStore(usage.store);
       setUsageStatus(usage.status);
@@ -109,13 +109,13 @@ export function AskAiPage() {
   });
 
   const cards = getRecords(context.data ?? {}, "cards");
-  const sheets = useMemo(() => [{ name: "问 AI", rows: [["问题", question], ["回答", answer]] }], [answer, question]);
+  const sheets = useMemo(() => [{ name: "策略问答", rows: [["问题", question], ["回答", answer]] }], [answer, question]);
   const promptPreview = useMemo(() => {
     const sectionText = sections.map((section) => `## ${getString(section, "title")}\n${getString(section, "content")}`).join("\n\n");
     return [`# 系统提示`, getString(context.data ?? {}, "system_prompt", "使用当前复盘上下文回答。"), sectionText, `# 用户问题\n${question}`].filter(Boolean).join("\n\n");
   }, [context.data, question, sections]);
 
-  if (context.isLoading) return <LoadingState title="正在加载 AI 上下文" />;
+  if (context.isLoading) return <LoadingState title="正在加载策略上下文" />;
   if (context.isError) return <ErrorState message={errorMessage(context.error)} onRetry={() => context.refetch()} />;
 
   const templates = [
@@ -132,10 +132,10 @@ export function AskAiPage() {
   return (
     <section className="page-scroll" ref={workspaceRef}>
       <PageHeader
-        actions={<ExportActions onRefresh={() => context.refetch()} payload={{ context: context.data, answer }} sheets={sheets} targetRef={workspaceRef} title="问 AI" />}
-        description="读取复盘上下文、生成 AI 策略判断、保存历史记录，并保留个人 Kimi Key 与本地限额控制。"
+        actions={<ExportActions onRefresh={() => context.refetch()} payload={{ context: context.data, answer }} sheets={sheets} targetRef={workspaceRef} title="策略问答" />}
+        description="读取复盘上下文、生成策略判断、保存历史记录，并保留个人 Kimi Key 与本地限额控制。"
         meta={`${displayDate(getString(context.data ?? {}, "trade_date", ""))} · ${displayDateTime(getString(context.data ?? {}, "generated_at", ""))}`}
-        title="问 AI"
+        title="策略问答"
       />
       <section className="metric-grid">
         {cards.slice(0, 4).map((card) => (
@@ -150,10 +150,10 @@ export function AskAiPage() {
           { label: "交易日", value: displayDate(getString(context.data ?? {}, "trade_date", "")), tone: "neutral" },
           { label: "本地剩余", value: usageStatus.isUnlimited ? "不限" : `${usageStatus.remaining}`, tone: usageStatus.canSend ? "up" : "down" }
         ]}
-        title="AI 工作台状态"
+        title="策略辅助状态"
       />
       <section className="content-grid ask-ai-layout ask-ai-console">
-        <GlassCard className="ask-composer-card" eyebrow="AI 提问" title="提问工作区">
+        <GlassCard className="ask-composer-card" eyebrow="策略提问" title="提问工作区">
           <div className="ask-workbench">
             <div className="ask-workbench-head">
               <span>复盘问题</span>
@@ -166,17 +166,17 @@ export function AskAiPage() {
                 </button>
               ))}
             </div>
-            <textarea aria-label="AI 问题" value={question} onChange={(event) => setQuestion(event.target.value)} />
+            <textarea aria-label="策略问题" value={question} onChange={(event) => setQuestion(event.target.value)} />
             <div className={`usage-banner ${canGenerate ? "" : "danger"}`}>
               <b>{canGenerate ? "可生成" : "已限额"}</b>
               <span data-testid="ask-ai-local-usage">{usageSummaryText(usageStatus)}</span>
               <span data-testid="ask-ai-server-usage">{aiFeatureUsageText(askAiServerUsage)}</span>
             </div>
             {localQuotaExhausted ? (
-              <div className="usage-banner danger">已达到本地日调用上限，当前 AI 生成按钮已锁定为灰色。</div>
+              <div className="usage-banner danger">已达到本地日调用上限，当前生成按钮已锁定为灰色。</div>
             ) : null}
             {serverQuotaExhausted ? (
-              <div className="usage-banner danger">服务端问 AI 今日额度已用完，当前 AI 生成按钮已锁定为灰色。</div>
+              <div className="usage-banner danger">服务端策略问答今日额度已用完，当前生成按钮已锁定为灰色。</div>
             ) : null}
             {statusText ? <div className={`usage-banner ${statusText.includes("上限") || statusText.includes("失败") ? "danger" : "success"}`}>{statusText}</div> : null}
             <div className="ask-actions">
@@ -195,7 +195,7 @@ export function AskAiPage() {
           </div>
         </GlassCard>
         <div className="ai-side-stack ask-side-stack">
-          <GlassCard className="ai-settings-card" eyebrow="额度与模型" title="AI 服务设置">
+          <GlassCard className="ai-settings-card" eyebrow="额度与模型" title="策略服务设置">
             <div className="ai-settings-panel">
               <label className="field-row">
                 <span>个人 Kimi Key</span>
@@ -219,11 +219,11 @@ export function AskAiPage() {
                   if (next.apiKey) {
                     await client.postMap("/api/v1/ask-ai/client-config", buildAskAiSyncPayload(next, clientId), 12_000);
                   }
-                  setStatusText("AI 设置已保存。");
+                  setStatusText("策略服务设置已保存。");
                 }}
                 type="button"
               >
-                保存 AI 设置
+                保存策略设置
               </button>
             </div>
           </GlassCard>
@@ -262,12 +262,12 @@ export function AskAiPage() {
           </GlassCard>
         </div>
       </section>
-      <GlassCard className="answer-card" eyebrow="AI 输出" title="回答结果">
+      <GlassCard className="answer-card" eyebrow="策略输出" title="回答结果">
         <section className="answer-panel">
           {generate.isPending ? (
             <div className="ai-waiting compact">
-              <b>AI 正在写复盘</b>
-              <div className="typing" aria-label="AI 正在生成">
+              <b>正在写复盘</b>
+              <div className="typing" aria-label="策略复盘正在生成">
                 <i />
                 <i />
                 <i />
@@ -276,13 +276,13 @@ export function AskAiPage() {
           ) : answer ? (
             <MarkdownContent value={answer} />
           ) : (
-            <EmptyState action="输入问题后生成" description="可以使用上方模板快速切入主线、风险和次日计划。" title="等待 AI 回答" tone="muted" />
+            <EmptyState action="输入问题后生成" description="可以使用上方模板快速切入主线、风险和次日计划。" title="等待回答" tone="muted" />
           )}
         </section>
       </GlassCard>
       <GlassCard className="ask-history-card" eyebrow="复盘留痕" title="历史记录">
         <div className="history-list history-list-expanded" data-testid="ask-ai-history-list">
-          {getRecords(history.data ?? {}, "items").length === 0 ? <EmptyState action="保存一次 AI 结果" description="生成并保存后，历史复盘会出现在这里。" title="暂无历史记录" tone="muted" /> : null}
+          {getRecords(history.data ?? {}, "items").length === 0 ? <EmptyState action="保存一次结果" description="生成并保存后，历史复盘会出现在这里。" title="暂无历史记录" tone="muted" /> : null}
           {getRecords(history.data ?? {}, "items").map((item, index) => (
             <article key={`${getString(item, "saved_at")}-${index}`}>
               <b>{displayDate(getString(item, "trade_date", ""))}</b>

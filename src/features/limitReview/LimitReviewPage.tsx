@@ -112,7 +112,7 @@ export function LimitReviewPage() {
     <section className="page-scroll" ref={workspaceRef}>
       <PageHeader
         actions={<ExportActions onRefresh={() => query.refetch()} payload={data} sheets={sectionSheets} targetRef={workspaceRef} title="涨停复盘" />}
-        description="完整接入复盘页接口：涨停分组、连板高度、昨日反馈、弱势结构与 AI 复盘都在同一工作区内查看。"
+        description="完整接入复盘页接口：涨停分组、连板高度、昨日反馈、弱势结构与策略复盘都在同一工作区内查看。"
         meta={`${displayDate(getString(review, "trade_date", ""))} · ${displayDateTime(getString(review, "fetched_at", ""))}`}
         title="涨停复盘"
       />
@@ -189,7 +189,7 @@ export function LimitReviewPage() {
           </section>
         </GlassCard>
         <div className="limit-review-ai-panel">
-          <AiAnalysisPanel ai={asRecord(data.ai_review)} loading={aiMutation.isPending} onGenerate={() => aiMutation.mutate()} quota={aiUsage.usage} title="AI 涨停复盘" />
+          <AiAnalysisPanel ai={asRecord(data.ai_review)} loading={aiMutation.isPending} onGenerate={() => aiMutation.mutate()} quota={aiUsage.usage} title="涨停策略复盘" />
         </div>
       </section>
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildAskAiClientConfig,
   buildAskAiSyncPayload,
+  aiFeatureUsageText,
   getAiFeatureUsage,
   getAskAiUsageStatus,
   normalizeAskAiSettings,
@@ -78,5 +79,7 @@ describe("askAiSettings", () => {
       used: 2
     });
     expect(getAiFeatureUsage({ features: { limit_review: { limit: 0, remaining: 999, used: 8 } } }, "limit_review").canSend).toBe(true);
+    expect(aiFeatureUsageText(usage)).toBe("服务端策略问答：今日已用 2/2 次，剩余 0 次。");
+    expect(aiFeatureUsageText(getAiFeatureUsage({ features: { auction: { limit: 3, remaining: 1, used: 2 } } }, "auction"))).toBe("服务端竞价辅助：今日已用 2/3 次，剩余 1 次。");
   });
 });

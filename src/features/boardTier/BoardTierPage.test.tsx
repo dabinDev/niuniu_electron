@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { usePreferencesStore } from "../../app/preferencesStore";
 import { BoardTierPage } from "./BoardTierPage";
@@ -125,6 +127,14 @@ describe("BoardTierPage", () => {
     expect(tree).toHaveTextContent("炸板");
     expect(tree).not.toHaveTextContent("sealed");
     expect(tree).not.toHaveTextContent("broken");
+  });
+
+  it("keeps the wide tier tree horizontally scrollable inside the tree workspace", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+
+    expect(css).toMatch(/\.page-scroll\s+\.tier-tree-workspace\s*\{[\s\S]*overflow:\s*auto\s*!important/);
+    expect(css).toMatch(/\.page-scroll\s+\.tier-tree-rows\s*\{[\s\S]*overflow-x:\s*hidden\s*!important/);
+    expect(css).toMatch(/\.page-scroll\s+\.tier-tree-header,[\s\S]*\.page-scroll\s+\.tier-tree-row\s*\{[\s\S]*min-width:\s*920px\s*!important/);
   });
 });
 

@@ -665,7 +665,7 @@ a {
   width: 46%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #20d4f4, #ff4d55, #f59e0b);
+  background: linear-gradient(90deg, #dff3ff, #2b7edb, #20d4f4);
   animation: splashLoad 1.1s ease-in-out infinite;
 }
 
@@ -1256,12 +1256,12 @@ a {
 }
 
 .nav-icon-overview { --nav-icon-bg: linear-gradient(145deg, #536dfe, #00a8c8); }
-.nav-icon-auction { --nav-icon-bg: linear-gradient(145deg, #ff6a3d, #d92f45); }
+.nav-icon-auction { --nav-icon-bg: linear-gradient(145deg, #2b7edb, #1497c9); }
 .nav-icon-node { --nav-icon-bg: linear-gradient(145deg, #7657ff, #20d4f4); }
 .nav-icon-market-center { --nav-icon-bg: linear-gradient(145deg, #0ea5a3, #315bdc); }
 .nav-icon-yesterday-stats { --nav-icon-bg: linear-gradient(145deg, #64748b, #334155); }
-.nav-icon-board-tier { --nav-icon-bg: linear-gradient(145deg, #ff4d55, #f59e0b); }
-.nav-icon-board-height { --nav-icon-bg: linear-gradient(145deg, #f59e0b, #8b5cf6); }
+.nav-icon-board-tier { --nav-icon-bg: linear-gradient(145deg, #2b7edb, #5b8cff); }
+.nav-icon-board-height { --nav-icon-bg: linear-gradient(145deg, #1497c9, #4f8fdc); }
 .nav-icon-limit-review { --nav-icon-bg: linear-gradient(145deg, #ef4444, #7c3aed); }
 .nav-icon-plate-rotation { --nav-icon-bg: linear-gradient(145deg, #06b6d4, #22c55e); }
 .nav-icon-news { --nav-icon-bg: linear-gradient(145deg, #3b82f6, #0f766e); }
@@ -7709,7 +7709,7 @@ a {
 }
 
 .answer-panel::before {
-  content: "AI";
+  content: "智";
   position: absolute;
   right: 14px;
   top: 12px;
@@ -8117,12 +8117,12 @@ a {
 }
 
 .color-0 { --plate-glow: rgba(255, 77, 85, .22); }
-.color-1 { --plate-glow: rgba(245, 158, 11, .2); }
+.color-1 { --plate-glow: rgba(42, 167, 200, .18); }
 .color-2 { --plate-glow: rgba(91, 140, 255, .2); }
 .color-3 { --plate-glow: rgba(32, 212, 244, .18); }
 .color-4 { --plate-glow: rgba(139, 92, 246, .2); }
 .color-5 { --plate-glow: rgba(24, 195, 126, .18); }
-.color-6 { --plate-glow: rgba(255, 103, 116, .18); }
+.color-6 { --plate-glow: rgba(43, 126, 219, .16); }
 .color-7 { --plate-glow: rgba(255, 255, 255, .12); }
 
 .rotation-near-card {
@@ -9166,6 +9166,34 @@ body,
   min-height: 42px;
 }
 
+/* Visual audit fixes: keep dense trading workspaces clipped to their own scrollers. */
+.page-scroll .tier-tree-workspace {
+  max-width: 100% !important;
+  overflow: auto !important;
+}
+
+.page-scroll .tier-tree-header,
+.page-scroll .tier-tree-row {
+  min-width: 920px !important;
+}
+
+.page-scroll .tier-tree-rows {
+  min-width: 920px !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+}
+
+.page-scroll .market-center-panel .data-table {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.page-scroll .market-center-panel .data-table-head,
+.page-scroll .market-center-panel .data-row {
+  min-width: max(100%, 980px) !important;
+}
+
 .app-root[data-theme="light"] .sidebar,
 .app-root[data-theme="dark"] .sidebar {
   border-right-color: rgba(47, 112, 186, .16);
@@ -9306,8 +9334,8 @@ body,
   background:
     radial-gradient(circle at 28% 20%, rgba(255, 255, 255, .82), transparent 22%),
     radial-gradient(circle at 68% 78%, rgba(7, 137, 167, .2), transparent 28%),
-    linear-gradient(145deg, #d92f45, #f59e0b);
-  box-shadow: 0 10px 24px rgba(217, 47, 69, .18), inset 0 1px 0 rgba(255, 255, 255, .46);
+    linear-gradient(145deg, #eef7ff, #b9e6ff 48%, #2b7edb);
+  box-shadow: 0 10px 24px rgba(43, 126, 219, .18), inset 0 1px 0 rgba(255, 255, 255, .68);
 }
 
 .kline-chart {
@@ -9724,6 +9752,17 @@ body,
   overflow: visible !important;
 }
 
+.page-scroll .market-center-workspace,
+.page-scroll .market-center-panel,
+.page-scroll .height-session-matrix,
+.page-scroll .height-matrix-card,
+.page-scroll .rotation-matrix-card,
+.page-scroll .node-kline-workspace,
+.page-scroll .node-kline-workspace .kline-card {
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
 .page-scroll .data-table-head,
 .page-scroll .data-row,
 .page-scroll .tier-tree-header,
@@ -9736,9 +9775,23 @@ body,
 .page-scroll .node-date-strip,
 .page-scroll .matrix-scroll,
 .page-scroll .height-matrix-scroll,
-.page-scroll .data-table:not(.review-groups-panel .data-table) {
+.page-scroll .data-table:not(.review-groups-panel .data-table):not(.market-center-panel .data-table) {
   max-width: none !important;
   overflow: visible !important;
+}
+
+.page-scroll .height-matrix-scroll,
+.page-scroll .matrix-scroll,
+.page-scroll .node-date-strip,
+.page-scroll .market-center-panel .data-table {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.page-scroll .market-center-panel .data-table-body {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
 }
 
 .data-table-body,
@@ -9770,6 +9823,35 @@ body,
 
 .data-table-body {
   scrollbar-gutter: auto;
+}
+
+.page-scroll .height-matrix-scroll {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.page-scroll .matrix-scroll {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.page-scroll .node-date-strip {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.page-scroll .market-center-panel .data-table {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.page-scroll .market-center-panel .data-table-body {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
 }
 
 .page-scroll .review-groups-panel .data-table {
@@ -10365,7 +10447,7 @@ body,
   padding: 14px;
   background:
     linear-gradient(145deg, rgba(32, 212, 244, .08), transparent 46%),
-    radial-gradient(circle at 92% 12%, rgba(255, 77, 85, .1), transparent 28%),
+    radial-gradient(circle at 92% 12%, rgba(43, 126, 219, .12), transparent 28%),
     var(--surface-0);
 }
 
@@ -10844,11 +10926,11 @@ body,
 }
 
 .color-6 {
-  --plate-rgb: 249, 115, 22;
-  --plate-accent: #f97316;
-  --plate-accent-2: #fb7185;
-  --plate-glow: rgba(249, 115, 22, .22);
-  --plate-wash: rgba(249, 115, 22, .1);
+  --plate-rgb: 43, 126, 219;
+  --plate-accent: #2b7edb;
+  --plate-accent-2: #8ec5ff;
+  --plate-glow: rgba(43, 126, 219, .18);
+  --plate-wash: rgba(43, 126, 219, .09);
 }
 
 .color-7 {
@@ -11459,6 +11541,16 @@ body,
   background: #ffffff;
   backdrop-filter: none;
   box-shadow: 0 8px 22px rgba(34, 88, 146, .08);
+}
+
+.page-scroll .market-center-panel .data-table {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.page-scroll .market-center-panel .data-table-body {
+  overflow: visible !important;
 }
 
 .glass-card.live-column {

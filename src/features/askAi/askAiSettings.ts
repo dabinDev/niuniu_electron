@@ -26,6 +26,12 @@ export type AiFeatureUsage = {
   used: number;
 };
 
+const aiFeatureLabels: Record<AiFeatureKey, string> = {
+  ask_ai: "策略问答",
+  auction: "竞价辅助",
+  limit_review: "涨停复盘"
+};
+
 export const askAiStorageKeys = {
   clientId: "niuniu-ask-ai-client-id",
   settings: "niuniu-ask-ai-settings",
@@ -154,10 +160,11 @@ export function getAiFeatureUsage(payload: unknown, feature: AiFeatureKey): AiFe
 }
 
 export function aiFeatureUsageText(usage: AiFeatureUsage): string {
+  const featureLabel = aiFeatureLabels[usage.feature] ?? usage.feature;
   if (usage.isUnlimited) {
-    return `服务端 ${usage.feature}：今日已用 ${usage.used} 次，不设服务端上限。`;
+    return `服务端${featureLabel}：今日已用 ${usage.used} 次，不设服务端上限。`;
   }
-  return `服务端 ${usage.feature}：今日已用 ${usage.used}/${usage.limit} 次，剩余 ${usage.remaining} 次。`;
+  return `服务端${featureLabel}：今日已用 ${usage.used}/${usage.limit} 次，剩余 ${usage.remaining} 次。`;
 }
 
 function usageKeyFor(settings: AskAiSettings): string {

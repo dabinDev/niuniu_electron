@@ -166,8 +166,23 @@ describe("AppShell", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "折叠侧边栏" }));
 
-    expect(screen.getByRole("link", { name: "AI 问 AI AI 分析页" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "智 策略问答" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "复 涨停复盘" })).toBeInTheDocument();
+  });
+
+  it("renders the ask sidebar entry without duplicate AI branding in expanded mode", () => {
+    render(
+      <MemoryRouter initialEntries={["/ask-ai"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    const askLink = screen.getByRole("link", { name: "智 策略问答" });
+    expect(askLink).toHaveTextContent("智策略问答F11");
+    expect(askLink.querySelector("em")).not.toBeInTheDocument();
+    expect(askLink).not.toHaveAccessibleName("智 问 AI AI 分析页");
   });
 
   it("renders a short-term trading priority strip in the upper sidebar area", () => {
@@ -228,7 +243,7 @@ describe("AppShell", () => {
     expect(container.querySelector(".nav-icon-mark.nav-icon-ask-ai svg")).not.toBeInTheDocument();
     expect(container.querySelector(".nav-icon-mark.nav-icon-overview")).toHaveTextContent("总");
     expect(container.querySelector(".nav-icon-mark.nav-icon-board-tier")).toHaveTextContent("梯");
-    expect(container.querySelector(".nav-icon-mark.nav-icon-ask-ai")).toHaveTextContent("AI");
+    expect(container.querySelector(".nav-icon-mark.nav-icon-ask-ai")).toHaveTextContent("智");
   });
 
   it("separates collapsed icon text from hidden nav labels for fullscreen compact mode", async () => {
@@ -307,7 +322,7 @@ describe("AppShell", () => {
     expect(await screen.findByRole("dialog", { name: "牛牛开盘使用声明与邀请验证" })).toBeInTheDocument();
     expect(screen.getByText("本项目仅作学习、研究与数据复盘使用。如涉及权利问题，请联系作者处理。")).toBeInTheDocument();
     expect(screen.getByText("所有功能不构成股票、基金或其他金融产品的投资建议。请保持独立判断，理性看待市场波动。")).toBeInTheDocument();
-    expect(screen.getByText("AI 内容由模型基于数据综合生成，可能存在遗漏、偏差或误读，作者不对 AI 输出及其使用结果负责。")).toBeInTheDocument();
+    expect(screen.getByText("模型内容基于数据综合生成，可能存在遗漏、偏差或误读，作者不对模型输出及其使用结果负责。")).toBeInTheDocument();
   });
 
   it("lets a first-time user request automatic trial access and stores that acknowledgement", async () => {

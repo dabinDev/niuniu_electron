@@ -66,10 +66,10 @@ export function Sidebar({ collapsed, machineCode, navigationItems, onCopyMachine
           const aiEnabled = aiPaths.has(item.path);
           return (
           <NavLink
-            aria-label={`${item.mark} ${item.label}${aiEnabled ? " AI 分析页" : ""}`}
+            aria-label={`${item.mark} ${item.label}`}
             className={clsx(aiEnabled && "ai-capable")}
             key={item.path}
-            title={collapsed ? `${item.label}${aiEnabled ? " · AI" : ""}` : undefined}
+            title={collapsed ? item.label : undefined}
             to={item.path}
           >
             <i className={`nav-icon-mark nav-icon-${navIconClassByPath.get(item.path) ?? "default"}`} aria-hidden="true">
@@ -77,7 +77,6 @@ export function Sidebar({ collapsed, machineCode, navigationItems, onCopyMachine
             </i>
             {collapsed ? null : <span className="nav-label">{item.label}</span>}
             {collapsed ? null : <small className="nav-shortcut">{item.shortcut}</small>}
-            {aiEnabled ? <em>AI</em> : null}
           </NavLink>
           );
         })}

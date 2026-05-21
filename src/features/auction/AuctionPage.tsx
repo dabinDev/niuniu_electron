@@ -94,7 +94,7 @@ export function AuctionPage() {
             <ExportActions onRefresh={() => query.refetch()} payload={data} sheets={sheets} targetRef={workspaceRef} title="牛牛竞价" />
           </>
         }
-        description="复刻 Flutter 竞价工作区：历史竞价列、排名表、竞价 AI 分析和导出复制能力都接入真实接口。"
+        description="按短线开盘节奏组织历史竞价列、排名表、策略辅助分析和导出复制能力。"
         meta={`${displayDate(getString(data, "trade_date", ""))} · ${displayDateTime(getString(data, "fetched_at", ""))}`}
         title="牛牛竞价"
       />
@@ -157,7 +157,7 @@ export function AuctionPage() {
             <AuctionRankList items={currentRankItems} onOpenProfile={setProfileStock} onSelect={setSelectedStock} selectedStock={selectedStock} />
           )}
         </GlassCard>
-        <AiAnalysisPanel ai={asRecord(data.ai_analysis)} loading={aiMutation.isPending} onGenerate={() => aiMutation.mutate()} quota={aiUsage.usage} title="竞价 AI 分析" />
+        <AiAnalysisPanel ai={asRecord(data.ai_analysis)} loading={aiMutation.isPending} onGenerate={() => aiMutation.mutate()} quota={aiUsage.usage} title="竞价策略辅助" />
       </section>
       {profileStock ? <StockProfileSheet onClose={() => setProfileStock(null)} symbol={profileStock} /> : null}
     </section>
