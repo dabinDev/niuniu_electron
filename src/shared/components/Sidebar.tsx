@@ -1,19 +1,20 @@
 import clsx from "clsx";
 import { Copy } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { navigationItems } from "../../app/navigation";
+import type { NavigationItem } from "../../app/navigation";
 import brandIconUrl from "../../assets/brand/niuniu-client-icon.png";
 
 type SidebarProps = {
   collapsed: boolean;
   machineCode?: string;
+  navigationItems: NavigationItem[];
   onCopyMachineCode?: () => void;
   onOpenMessageCenter?: () => void;
   onOpenSettings?: () => void;
   onToggle: () => void;
 };
 
-const aiPaths = new Set(["/ask-ai", "/auction", "/limit-review"]);
+const aiPaths = new Set(["/ask-ai"]);
 const navIconClassByPath = new Map([
   ["/overview", "overview"],
   ["/auction", "auction"],
@@ -29,7 +30,7 @@ const navIconClassByPath = new Map([
   ["/jobs", "jobs"]
 ]);
 
-export function Sidebar({ collapsed, machineCode, onCopyMachineCode, onOpenMessageCenter, onOpenSettings, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, machineCode, navigationItems, onCopyMachineCode, onOpenMessageCenter, onOpenSettings, onToggle }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -41,15 +42,15 @@ export function Sidebar({ collapsed, machineCode, onCopyMachineCode, onOpenMessa
           <img alt="牛牛开盘图标" className="brand-icon-image" src={brandIconUrl} />
         </div>
       </div>
-      <div className="sidebar-ai-logo" aria-label="AI 牛牛功能标识">
-        <div className="ai-niuniu-mark">
-          <img alt="AI 牛牛图标" className="brand-icon-image" src={brandIconUrl} />
-          <span className="ai-niuniu-badge">牛</span>
+      <div className="sidebar-market-strip" aria-label="短线看盘优先级">
+        <div className="market-strip-mark">
+          <span>09:25</span>
+          <b>竞</b>
         </div>
         {collapsed ? null : (
           <div>
-            <b>AI 牛牛</b>
-            <span>额度 / 复盘 / 问答</span>
+            <b>短线看盘</b>
+            <span>竞价 · 梯队 · 题材 · 风险</span>
           </div>
         )}
       </div>

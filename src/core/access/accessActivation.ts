@@ -35,11 +35,20 @@ function normalizeActivation(value: Record<string, unknown>, fallbackMode: Invit
   return {
     accessId: stringValue(value.access_id),
     accessMode: value.access_type === "invite" || value.access_type === "trial" ? value.access_type : fallbackMode,
+    accessRole: normalizeAccessRole(value.access_role || value.role),
     activatedAt: stringValue(value.activated_at),
     activationSecret: stringValue(value.activation_secret),
     machineCode: stringValue(value.machine_code),
     machineCodeVersion: stringValue(value.machine_code_version || "win-v1")
   };
+}
+
+function normalizeAccessRole(value: unknown): AccessActivation["accessRole"] {
+  const normalized = stringValue(value).toLowerCase();
+  if (normalized === "admin" || normalized === "operator" || normalized === "owner") {
+    return normalized;
+  }
+  return "user";
 }
 
 function stringValue(value: unknown): string {

@@ -5,10 +5,12 @@ import { normalizeApiBaseUrl } from "../core/api/apiBaseUrl";
 export type ThemeMode = "dark" | "light";
 export type StockLinkClient = "tdx" | "ths";
 export type InviteAccessMode = "trial" | "invite";
+export type AccessRole = "admin" | "operator" | "owner" | "user";
 
 export type AccessActivation = {
   accessId: string;
   accessMode: InviteAccessMode;
+  accessRole: AccessRole;
   activatedAt: string;
   activationSecret: string;
   machineCode: string;
@@ -50,7 +52,7 @@ export const usePreferencesStore = create<AppPreferences>()(
       stockLinkClient: "tdx",
       tdxPath: "",
       thsPath: "",
-      theme: "dark",
+      theme: "light",
       acknowledgeInviteAccess: (value) =>
         set({
           inviteAccessMode: value.mode,

@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Copy, Download, Info, Minus, PanelLeftClose, PanelLeftOpen, RefreshCw, Settings, Square, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { navigationItems } from "../../app/navigation";
+import { visibleNavigationItems } from "../../app/navigation";
 import { type AccessActivation, usePreferencesStore } from "../../app/preferencesStore";
 import { activateAccess, applyTrialAccess } from "../../core/access/accessActivation";
 import { ApiClient } from "../../core/api/apiClient";
@@ -70,6 +70,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     [motionEnabled, sidebarCollapsed, windowState.isFullScreen, windowState.isMaximized]
   );
   const forcedUpdateLocked = Boolean(updateModalOpen && updateCheck?.forceUpdate);
+  const navigationItems = useMemo(() => visibleNavigationItems(accessActivation), [accessActivation]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -250,7 +251,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <WindowLight action="minimize" className="light-min" label="最小化窗口" />
             <WindowLight action="toggle-maximize" className="light-max" label="最大化或还原窗口" />
           </div>
-          <div className="window-title">牛牛开盘 · 复盘工作室</div>
+          <div className="window-title">牛牛开盘 · 短线交易工作台</div>
           <div className="title-actions">
             <button className="ghost-button sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} type="button">
               {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
@@ -285,6 +286,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Sidebar
             collapsed={sidebarCollapsed}
             machineCode={machineInfo?.machineCode ?? accessActivation?.machineCode}
+            navigationItems={navigationItems}
             onCopyMachineCode={() => {
               const value = machineInfo?.machineCode ?? accessActivation?.machineCode ?? "";
               if (value) {
@@ -446,7 +448,7 @@ function AboutDialog({
           <div className="about-product-mark" aria-hidden="true">牛</div>
           <div>
             <strong>牛牛开盘</strong>
-            <span>复盘、竞价与 AI 分析工作台</span>
+            <span>开盘竞价、连板梯队与题材轮动工作台</span>
           </div>
         </div>
 
@@ -678,8 +680,8 @@ function MessageCenterPanel({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const notices = [
     { tag: "快讯", title: "7x24 消息中心已接入资讯页", detail: "可在牛牛资讯页继续搜索关键词、筛选重点消息。" },
-    { tag: "公告", title: "复盘数据按当前接口实时刷新", detail: "若看到缓存时间滞后，请先检查任务中心采集状态。" },
-    { tag: "提醒", title: "AI 页面支持本地限额和个人 Kimi Key", detail: "公共额度触发限制时，可在问 AI 页面展开服务设置。" }
+    { tag: "公告", title: "复盘数据按当前接口实时刷新", detail: "若看到缓存时间滞后，请联系管理员检查采集任务。" },
+    { tag: "提醒", title: "问 AI 页面支持本地限额和个人 Kimi Key", detail: "公共额度触发限制时，可在问 AI 页面展开服务设置。" }
   ];
 
   return (
@@ -687,7 +689,7 @@ function MessageCenterPanel({ onClose }: { onClose: () => void }) {
       <section aria-label="消息中心 / 7x24" className="message-center-panel" role="dialog">
         <header className="card-head">
           <div>
-            <span className="card-eyebrow">复盘工作室</span>
+            <span className="card-eyebrow">短线工作台</span>
             <b>消息中心 / 7x24</b>
           </div>
           <button aria-label="关闭消息中心" className="ghost-button" onClick={onClose} type="button">

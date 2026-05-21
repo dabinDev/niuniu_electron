@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export function PageHeader({ actions, description, eyebrow = "复盘工作室", meta, title }: { actions?: ReactNode; description: string; eyebrow?: string; meta?: string; title: string }) {
+export function PageHeader({ actions, description, eyebrow = "短线工作台", meta, title }: { actions?: ReactNode; description: string; eyebrow?: string; meta?: string; title: string }) {
   return (
     <section className="page-head">
       <div>

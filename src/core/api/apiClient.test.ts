@@ -31,6 +31,7 @@ describe("ApiClient", () => {
       accessProvider: () => ({
         accessId: "invite_123",
         accessMode: "invite",
+        accessRole: "user",
         activatedAt: "2026-05-17T02:00:00+00:00",
         activationSecret: "secret",
         machineCode: "NN-MACHINE",

@@ -20,6 +20,7 @@ describe("AppShell", () => {
       accessActivation: {
         accessId: "trial_existing",
         accessMode: "trial",
+        accessRole: "user",
         activatedAt: "2026-05-17T02:00:00Z",
         activationSecret: "secret",
         machineCode: "NN-EXISTING",
@@ -30,7 +31,7 @@ describe("AppShell", () => {
       inviteCode: "",
       motionEnabled: true,
       sidebarCollapsed: false,
-      theme: "dark"
+      theme: "light"
     });
   });
 
@@ -46,7 +47,7 @@ describe("AppShell", () => {
     expect(screen.getByText("涨停复盘")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "折叠侧边栏" }));
     expect(screen.queryByText("涨停复盘")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "复 涨停复盘 AI 分析页" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "复 涨停复盘" })).toBeInTheDocument();
   });
 
   it("uses function keys to switch sections unless the user is typing", async () => {
@@ -60,7 +61,10 @@ describe("AppShell", () => {
     );
 
     expect(screen.getByTestId("location")).toHaveTextContent("/overview");
-    await userEvent.keyboard("{F8}");
+    await userEvent.keyboard("{F5}");
+    expect(screen.getByTestId("location")).toHaveTextContent("/limit-review");
+
+    await userEvent.keyboard("{F12}");
     expect(screen.getByTestId("location")).toHaveTextContent("/limit-review");
 
     await userEvent.click(screen.getByLabelText("搜索"));
@@ -71,6 +75,42 @@ describe("AppShell", () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "F12" }));
     });
     expect(screen.getByTestId("location")).toHaveTextContent("/limit-review");
+  });
+
+  it("shows the task center only for admin activations", () => {
+    const { rerender } = render(
+      <MemoryRouter initialEntries={["/overview"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole("link", { name: /任务中心/ })).not.toBeInTheDocument();
+
+    act(() => {
+      usePreferencesStore.setState({
+        accessActivation: {
+          accessId: "admin_existing",
+          accessMode: "invite",
+          accessRole: "admin",
+          activatedAt: "2026-05-17T02:00:00Z",
+          activationSecret: "secret",
+          machineCode: "NN-ADMIN",
+          machineCodeVersion: "win-v1"
+        }
+      });
+    });
+
+    rerender(
+      <MemoryRouter initialEntries={["/overview"]}>
+        <AppShell>
+          <div>content</div>
+        </AppShell>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("link", { name: "任 任务中心" })).toBeInTheDocument();
   });
 
   it("wires the custom window lights to Electron window controls", async () => {
@@ -114,7 +154,7 @@ describe("AppShell", () => {
     expect(screen.getByRole("dialog", { name: "消息中心 / 7x24" })).toBeInTheDocument();
   });
 
-  it("keeps AI-capable pages distinguishable in collapsed sidebar", async () => {
+  it("keeps only the ask page marked as AI-capable in collapsed sidebar", async () => {
     render(
       <MemoryRouter initialEntries={["/ask-ai"]}>
         <AppShell>
@@ -126,10 +166,10 @@ describe("AppShell", () => {
     await userEvent.click(screen.getByRole("button", { name: "折叠侧边栏" }));
 
     expect(screen.getByRole("link", { name: "AI 问 AI AI 分析页" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "复 涨停复盘 AI 分析页" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "复 涨停复盘" })).toBeInTheDocument();
   });
 
-  it("renders a dedicated AI NiuNiu logo in the upper sidebar area", () => {
+  it("renders a short-term trading priority strip in the upper sidebar area", () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/ask-ai"]}>
         <AppShell>
@@ -138,12 +178,10 @@ describe("AppShell", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByLabelText("AI 牛牛功能标识")).toBeInTheDocument();
-    expect(screen.getByText("AI 牛牛")).toBeInTheDocument();
-    expect(screen.getByAltText("AI 牛牛图标")).toBeInTheDocument();
-    expect(container.querySelector(".ai-niuniu-mark .brand-icon-image")).toBeInTheDocument();
-    expect(container.querySelector(".ai-niuniu-mark .niuniu-bull-mark")).not.toBeInTheDocument();
-    expect(container.querySelector(".ai-niuniu-mark svg")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("短线看盘优先级")).toBeInTheDocument();
+    expect(screen.getByText("短线看盘")).toBeInTheDocument();
+    expect(screen.getByText("竞价 · 梯队 · 题材 · 风险")).toBeInTheDocument();
+    expect(container.querySelector(".market-strip-mark")).toHaveTextContent("09:25");
   });
 
   it("uses the provided NiuNiu icon image for the app brand instead of generated marks", () => {
@@ -620,6 +658,7 @@ function mockActivationEnvironment(accessId: string, accessType: "trial" | "invi
     return new Response(JSON.stringify({
     access_id: accessId,
     access_type: accessType,
+    access_role: accessId.includes("admin") ? "admin" : "user",
     activated_at: "2026-05-17T02:00:00Z",
     activation_secret: "activation-secret",
     machine_code: "NN-TEST-MACHINE",
