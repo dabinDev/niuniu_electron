@@ -2,6 +2,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { queryClient } from "../../app/queryClient";
 import { usePreferencesStore } from "../../app/preferencesStore";
 import { defaultApiBaseUrl } from "../../core/api/apiBaseUrl";
 import { AppShell } from "./AppShell";
@@ -311,6 +312,7 @@ describe("AppShell", () => {
 
   it("lets a first-time user request automatic trial access and stores that acknowledgement", async () => {
     const fetchMock = mockActivationEnvironment("trial_access", "trial");
+    const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
     usePreferencesStore.setState({
       accessActivation: null,
       inviteAccessMode: null,
@@ -332,6 +334,7 @@ describe("AppShell", () => {
     expect(usePreferencesStore.getState().inviteAcknowledged).toBe(true);
     expect(usePreferencesStore.getState().inviteAccessMode).toBe("trial");
     expect(usePreferencesStore.getState().accessActivation?.accessId).toBe("trial_access");
+    expect(invalidateQueries).toHaveBeenCalledWith();
     expect(fetchMock).toHaveBeenCalledWith(
       `${defaultApiBaseUrl}/api/v1/access/trial/apply`,
       expect.objectContaining({

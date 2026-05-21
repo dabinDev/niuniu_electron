@@ -2,6 +2,7 @@ import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { Bell, Copy, Download, Info, Minus, PanelLeftClose, PanelLeftOpen, RefreshCw, Settings, Square, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { visibleNavigationItems } from "../../app/navigation";
+import { queryClient } from "../../app/queryClient";
 import { type AccessActivation, usePreferencesStore } from "../../app/preferencesStore";
 import { activateAccess, applyTrialAccess } from "../../core/access/accessActivation";
 import { ApiClient } from "../../core/api/apiClient";
@@ -59,6 +60,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     () => new ApiClient({ accessProvider: () => accessActivation, baseUrl: apiBaseUrl }),
     [accessActivation, apiBaseUrl]
   );
+  const handleAccessActivated = useCallback((value: AccessActivation) => {
+    saveAccessActivation(value);
+    void queryClient.invalidateQueries();
+  }, [queryClient, saveAccessActivation]);
 
   const className = useMemo(
     () => [
@@ -326,7 +331,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <InvitationNoticeDialog
           apiBaseUrl={apiBaseUrl}
           machineInfo={machineInfo}
-          onActivated={saveAccessActivation}
+          onActivated={handleAccessActivated}
         />
       ) : null}
     </div>
